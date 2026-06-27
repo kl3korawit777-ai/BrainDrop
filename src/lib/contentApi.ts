@@ -1,7 +1,17 @@
-import { content as staticContent, type ContentItem } from '../data/content'
+import { content as staticContent, toSlidesEmbedUrl, type ContentItem } from '../data/content'
 
 const TABLE = 'summaries'
-const URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
+
+/** ตัด trailing slash และ /rest/v1 ที่อาจติดมาจาก env ออก เหลือแค่ base URL สะอาด */
+function normalizeBaseUrl(raw?: string): string | undefined {
+  if (!raw) return raw
+  return raw
+    .trim()
+    .replace(/\/+$/, '')          // ตัด / ท้ายสุด
+    .replace(/\/rest\/v1$/, '')   // ตัด /rest/v1 ถ้าเผลอใส่มา
+}
+
+const URL = normalizeBaseUrl(import.meta.env.VITE_SUPABASE_URL as string | undefined)
 const ANON = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
 export const isSupabaseConfigured = Boolean(URL && ANON)
@@ -27,7 +37,7 @@ export function toRow(item: ContentItem) {
     title: item.title,
     subject: item.subject,
     tags: item.tags,
-    slides_embed_url: item.slidesEmbedUrl,
+    slides_embed_url: toSlidesEmbedUrl(item.slidesEmbedUrl),
     drive_url: item.driveUrl ?? null,
     slide_count: item.slideCount,
     updated_at: item.updatedAt || new Date().toISOString().slice(0, 10),

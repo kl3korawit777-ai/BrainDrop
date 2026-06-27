@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
+import { useRef } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, ChevronLeft, ChevronRight, Download, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Download, ExternalLink, Maximize2, Check, MoveHorizontal } from 'lucide-react'
 import type { ContentItem } from '../data/content'
-import { getTagStyle } from '../data/content'
+import { getTagStyle, toSlidesEmbedUrl, toSlidesOpenUrl } from '../data/content'
 import { useStore } from '../store/useStore'
 
 interface Props {
@@ -12,26 +12,16 @@ interface Props {
 
 export default function SlidesViewer({ item, onBack }: Props) {
   const { readProgress, setReadProgress } = useStore()
-  const currentPage = readProgress[item.id] ?? 1
-  const pct = Math.round((currentPage / item.slideCount) * 100)
+  const isDone = (readProgress[item.id] ?? 0) >= item.slideCount
+  const iframeRef = useRef<HTMLIFrameElement>(null)
 
-  function go(delta: number) {
-    const next = Math.max(1, Math.min(item.slideCount, currentPage + delta))
-    setReadProgress(item.id, next)
+  function goFullscreen() {
+    iframeRef.current?.requestFullscreen?.()
   }
 
-  useEffect(() => {
-    if (!readProgress[item.id]) setReadProgress(item.id, 1)
-  }, [item.id])
-
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1)
-      if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1)
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [currentPage])
+  function toggleDone() {
+    setReadProgress(item.id, isDone ? 0 : item.slideCount)
+  }
 
   const isPlaceholder = item.slidesEmbedUrl.includes('EXAMPLE_ID')
 
@@ -41,7 +31,7 @@ export default function SlidesViewer({ item, onBack }: Props) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.25 }}
-      style={{ maxWidth: 900, margin: '0 auto', padding: '1.5rem 1rem' }}
+      style={{ maxWidth: 1180, margin: '0 auto', padding: '1.25rem 1.5rem' }}
     >
       {/* Back + title */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: '1rem' }}>
@@ -62,6 +52,14 @@ export default function SlidesViewer({ item, onBack }: Props) {
           </div>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button onClick={goFullscreen} style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            color: 'var(--text-muted)', fontSize: 13,
+          }}>
+            <Maximize2 size={14} /> เต็มจอ
+          </button>
           {item.driveUrl && (
             <a href={item.driveUrl} target="_blank" rel="noreferrer" style={{
               display: 'flex', alignItems: 'center', gap: 5,
@@ -72,7 +70,7 @@ export default function SlidesViewer({ item, onBack }: Props) {
               <Download size={14} /> PDF
             </a>
           )}
-          <a href={item.slidesEmbedUrl.replace('/embed', '/pub')} target="_blank" rel="noreferrer" style={{
+          <a href={toSlidesOpenUrl(item.slidesEmbedUrl)} target="_blank" rel="noreferrer" style={{
             display: 'flex', alignItems: 'center', gap: 5,
             padding: '6px 12px', borderRadius: 8,
             background: 'var(--surface)', border: '1px solid var(--border)',
@@ -83,22 +81,7 @@ export default function SlidesViewer({ item, onBack }: Props) {
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div style={{ marginBottom: '0.75rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
-          <span>หน้า {currentPage} / {item.slideCount}</span>
-          <span>{pct}%{pct === 100 ? ' · อ่านครบแล้ว ✓' : ''}</span>
-        </div>
-        <div style={{ height: 5, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
-          <motion.div
-            style={{ height: '100%', background: 'var(--accent)', borderRadius: 3 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-      </div>
-
-      {/* Slides iframe */}
+      {/* Slides iframe — เลื่อนด้วยลูกศรในตัว Google Slides */}
       <div style={{
         background: 'var(--surface)', border: '1px solid var(--border)',
         borderRadius: 'var(--radius)', overflow: 'hidden',
@@ -117,7 +100,9 @@ export default function SlidesViewer({ item, onBack }: Props) {
           </div>
         ) : (
           <iframe
-            src={item.slidesEmbedUrl}
+            ref={iframeRef}
+            key={item.id}
+            src={toSlidesEmbedUrl(item.slidesEmbedUrl)}
             title={item.title}
             allowFullScreen
             style={{ width: '100%', height: '100%', border: 'none' }}
@@ -125,32 +110,37 @@ export default function SlidesViewer({ item, onBack }: Props) {
         )}
       </div>
 
-      {/* Navigation controls */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: '0.875rem' }}>
-        <button onClick={() => go(-1)} disabled={currentPage <= 1} style={{
-          display: 'flex', alignItems: 'center', gap: 5, padding: '8px 16px',
-          borderRadius: 8, border: '1px solid var(--border)',
-          background: 'var(--surface)', color: currentPage <= 1 ? 'var(--text-muted)' : 'var(--text)',
-          cursor: currentPage <= 1 ? 'default' : 'pointer', fontSize: 13,
+      {/* Hint + mark-as-read */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: 12, marginTop: '0.875rem',
+      }}>
+        <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-muted)' }}>
+          <MoveHorizontal size={15} />
+          เลื่อนสไลด์ด้วยลูกศร <strong style={{ color: 'var(--text)' }}>‹ ›</strong> ที่มุมล่างของสไลด์ หรือกด <strong style={{ color: 'var(--text)' }}>เต็มจอ</strong>
+        </p>
+        <button onClick={toggleDone} style={{
+          display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
+          borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+          border: isDone ? '1px solid var(--accent)' : '1px solid var(--border)',
+          background: isDone ? 'var(--accent)' : 'var(--surface)',
+          color: isDone ? 'white' : 'var(--text-muted)',
+          transition: 'all 0.2s',
         }}>
-          <ChevronLeft size={16} /> ก่อนหน้า
-        </button>
-        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-          {currentPage} / {item.slideCount}
-        </span>
-        <button onClick={() => go(1)} disabled={currentPage >= item.slideCount} style={{
-          display: 'flex', alignItems: 'center', gap: 5, padding: '8px 16px',
-          borderRadius: 8, border: '1px solid var(--border)',
-          background: currentPage >= item.slideCount ? 'var(--surface)' : 'var(--accent)',
-          color: currentPage >= item.slideCount ? 'var(--text-muted)' : 'white',
-          cursor: currentPage >= item.slideCount ? 'default' : 'pointer', fontSize: 13,
-        }}>
-          ถัดไป <ChevronRight size={16} />
+          <Check size={16} /> {isDone ? 'อ่านจบแล้ว' : 'ทำเครื่องหมายว่าอ่านจบ'}
         </button>
       </div>
-      <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-        กด ← → เพื่อเปลี่ยนหน้า
-      </p>
+
+      {/* Progress bar */}
+      <div style={{ marginTop: '0.75rem' }}>
+        <div style={{ height: 5, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
+          <motion.div
+            style={{ height: '100%', background: 'var(--accent)', borderRadius: 3 }}
+            animate={{ width: isDone ? '100%' : '0%' }}
+            transition={{ duration: 0.35 }}
+          />
+        </div>
+      </div>
     </motion.div>
   )
 }

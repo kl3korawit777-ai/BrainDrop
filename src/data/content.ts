@@ -52,6 +52,38 @@ export function getTagStyle(tag: string) {
   return TAG_COLORS[tag] ?? { bg: '#F1EFE8', color: '#444441' }
 }
 
+// ─── Google Slides URL helpers ───────────────────────────────────────────────
+// ดึง presentation ID จาก Google Slides URL ทุกรูปแบบ
+// รองรับ:  /d/<ID>/edit     (เอกสารปกติ — แชร์ "ทุกคนที่มีลิงก์")
+//          /d/e/<ID>/pub    (Publish to web — สะอาดที่สุด ไม่ต้องล็อกอิน)
+function parseSlidesId(raw: string): { id: string; published: boolean } | null {
+  const pub = raw.match(/\/presentation\/d\/e\/([^/?#]+)/)
+  if (pub) return { id: pub[1], published: true }
+  const doc = raw.match(/\/presentation\/d\/([^/?#]+)/)
+  if (doc) return { id: doc[1], published: false }
+  return null
+}
+
+/** แปลง URL อะไรก็ตามที่วางมา → embed ที่สะอาด (ไม่มี toolbar/เมนู) */
+export function toSlidesEmbedUrl(raw: string): string {
+  if (!raw || raw.includes('EXAMPLE_ID')) return raw
+  const p = parseSlidesId(raw)
+  if (!p) return raw
+  const q = 'start=false&loop=false&delayms=3000&rm=minimal'
+  return p.published
+    ? `https://docs.google.com/presentation/d/e/${p.id}/embed?${q}`
+    : `https://docs.google.com/presentation/d/${p.id}/embed?${q}`
+}
+
+/** ลิงก์ "เปิดใน Slides" สำหรับเปิดดูแบบเต็มหน้าจอในแท็บใหม่ */
+export function toSlidesOpenUrl(raw: string): string {
+  if (!raw || raw.includes('EXAMPLE_ID')) return raw
+  const p = parseSlidesId(raw)
+  if (!p) return raw
+  return p.published
+    ? `https://docs.google.com/presentation/d/e/${p.id}/pub?start=false&loop=false`
+    : `https://docs.google.com/presentation/d/${p.id}/edit`
+}
 // ─── เนื้อหา — เพิ่ม item ใหม่ที่นี่ ──────────────────────────────────────────
 export const content: ContentItem[] = [
   {
