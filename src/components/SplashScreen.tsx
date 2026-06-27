@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Logo from './Logo'
 
 interface Props {
   onDone: () => void
@@ -42,17 +43,7 @@ export default function SplashScreen({ onDone }: Props) {
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}
             >
               {/* Logo mark */}
-              <div style={{
-                width: 72, height: 72, borderRadius: 22,
-                background: 'linear-gradient(135deg, var(--accent) 0%, #818CF8 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 8px 32px rgba(58,134,255,0.35)',
-              }}>
-                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44l-1.53-8.4A2.5 2.5 0 0 1 7.96 8H9.5z" />
-                  <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44l1.53-8.4A2.5 2.5 0 0 0 16.04 8H14.5z" />
-                </svg>
-              </div>
+              <Logo size={72} />
               <motion.p
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -88,16 +79,8 @@ export default function SplashScreen({ onDone }: Props) {
                     border: '2px solid var(--accent)',
                   }}
                 />
-                <div style={{
-                  width: 80, height: 80, borderRadius: 24,
-                  background: 'linear-gradient(135deg, var(--accent) 0%, #818CF8 100%)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 8px 32px rgba(58,134,255,0.35)',
-                }}>
-                  <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44l-1.53-8.4A2.5 2.5 0 0 1 7.96 8H9.5z" />
-                    <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44l1.53-8.4A2.5 2.5 0 0 0 16.04 8H14.5z" />
-                  </svg>
+                <div style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Logo size={80} />
                 </div>
               </div>
 

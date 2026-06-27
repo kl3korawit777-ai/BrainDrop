@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import type { ContentItem } from '../data/content'
+import { fetchContent } from '../lib/contentApi'
 
 interface Store {
   theme: 'light' | 'dark'
@@ -13,6 +15,10 @@ interface Store {
   setReadProgress: (id: string, page: number) => void
   sidebarOpen: boolean
   setSidebarOpen: (v: boolean) => void
+  // content (shared by public site + admin)
+  content: ContentItem[]
+  contentLoading: boolean
+  loadContent: () => Promise<void>
 }
 
 export const useStore = create<Store>((set, get) => ({
@@ -36,4 +42,12 @@ export const useStore = create<Store>((set, get) => ({
     set(s => ({ readProgress: { ...s.readProgress, [id]: page } })),
   sidebarOpen: false,
   setSidebarOpen: (v) => set({ sidebarOpen: v }),
+
+  content: [],
+  contentLoading: true,
+  loadContent: async () => {
+    set({ contentLoading: true })
+    const items = await fetchContent()
+    set({ content: items, contentLoading: false })
+  },
 }))

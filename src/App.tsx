@@ -1,8 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Sidebar from './components/Sidebar'
 import Home from './pages/Home'
 import SplashScreen from './components/SplashScreen'
+import { useStore } from './store/useStore'
+
+const Admin = lazy(() => import('./pages/Admin'))
 
 const SPLASH_KEY = 'braindrop_visited'
 
@@ -17,9 +20,23 @@ function shouldShowSplash() {
 }
 
 export default function App() {
+  const loadContent = useStore(s => s.loadContent)
+  const isAdmin = window.location.pathname.startsWith('/admin')
+
+  useEffect(() => { loadContent() }, [loadContent])
+
+  if (isAdmin) return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>กำลังโหลด...</div>}>
+      <Admin />
+    </Suspense>
+  )
+
+  return <PublicSite />
+}
+
+function PublicSite() {
   const [view, setView] = useState('home')
   const [splashing, setSplashing] = useState(() => shouldShowSplash())
-
   const handleSplashDone = useCallback(() => setSplashing(false), [])
 
   return (

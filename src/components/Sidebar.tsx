@@ -1,7 +1,9 @@
+import { useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LayoutGrid, BookOpen, Tag, Search, Moon, Sun, X } from 'lucide-react'
 import { useStore } from '../store/useStore'
-import { SUBJECTS } from '../data/content'
+import { SUBJECT_CONFIG } from '../data/content'
+import Logo from './Logo'
 
 interface Props {
   currentView: string
@@ -16,30 +18,21 @@ const navItems = [
 ]
 
 export default function Sidebar({ currentView, onNavigate }: Props) {
-  const { theme, toggleTheme, activeSubject, setActiveSubject, sidebarOpen, setSidebarOpen } = useStore()
+  const { theme, toggleTheme, activeSubject, setActiveSubject, sidebarOpen, setSidebarOpen, content } = useStore()
+
+  // วิชา = config ที่ตั้งไว้ + วิชาใหม่ที่มีใน content (จาก admin)
+  const SUBJECTS = useMemo(() => {
+    const fromConfig = Object.keys(SUBJECT_CONFIG)
+    const fromContent = content.map(c => c.subject)
+    return ['ทั้งหมด', ...new Set([...fromConfig, ...fromContent])]
+  }, [content])
 
   const inner = (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '1.25rem 0.875rem' }}>
 
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1.75rem', padding: '0 0.375rem' }}>
-        <div style={{
-          width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-          background: 'linear-gradient(135deg, var(--accent) 0%, #818CF8 100%)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 2px 8px rgba(58,134,255,0.3)',
-        }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44l-1.53-8.4A2.5 2.5 0 0 1 7.96 8H9.5z" />
-            <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44l1.53-8.4A2.5 2.5 0 0 0 16.04 8H14.5z" />
-          </svg>
-        </div>
-        <span style={{
-          fontSize: 'var(--text-base)', fontWeight: 'var(--fw-bold)',
-          color: 'var(--text)', letterSpacing: '-0.3px',
-        }}>
-          BrainDrop
-        </span>
+        <Logo size={30} withText />
         {sidebarOpen && (
           <button
             aria-label="ปิด sidebar"

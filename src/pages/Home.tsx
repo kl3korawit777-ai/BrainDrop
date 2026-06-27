@@ -1,18 +1,18 @@
 import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, Menu, SlidersHorizontal } from 'lucide-react'
-import { content, getTagStyle } from '../data/content'
+import { getTagStyle } from '../data/content'
 import ContentCard from '../components/ContentCard'
 import SlidesViewer from '../components/SlidesViewer'
 import ContactFooter from '../components/ContactFooter'
 import { useStore } from '../store/useStore'
 
-const ALL_TAGS = [...new Set(content.flatMap(c => c.tags))].sort()
-
 export default function Home() {
-  const { searchQuery, setSearchQuery, activeTags, toggleTag, activeSubject, setSidebarOpen } = useStore()
+  const { searchQuery, setSearchQuery, activeTags, toggleTag, activeSubject, setSidebarOpen, content, contentLoading } = useStore()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+
+  const ALL_TAGS = useMemo(() => [...new Set(content.flatMap(c => c.tags))].sort(), [content])
 
   const selectedItem = content.find(c => c.id === selectedId)
 
@@ -25,7 +25,7 @@ export default function Home() {
     const matchTags = activeTags.length === 0 || activeTags.every(t => item.tags.includes(t))
     const matchSubject = activeSubject === 'ทั้งหมด' || item.subject === activeSubject
     return matchSearch && matchTags && matchSubject
-  }), [searchQuery, activeTags, activeSubject])
+  }), [content, searchQuery, activeTags, activeSubject])
 
   if (selectedItem) {
     return <SlidesViewer item={selectedItem} onBack={() => setSelectedId(null)} />
@@ -59,6 +59,7 @@ export default function Home() {
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 13.5, marginTop: 4 }}>
           {content.length} ชุดสรุป · อัปเดตล่าสุดวันนี้
+          {' '}<a href="/admin" style={{ color: 'var(--accent)', fontSize: 'var(--text-xs)', marginLeft: 6 }}>· จัดการ</a>
         </p>
       </motion.div>
 
@@ -180,7 +181,16 @@ export default function Home() {
 
       {/* Card grid */}
       <AnimatePresence mode="wait">
-        {filtered.length === 0 ? (
+        {contentLoading ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-muted)' }}
+          >
+            <p style={{ fontSize: 14 }}>กำลังโหลด...</p>
+          </motion.div>
+        ) : filtered.length === 0 ? (
           <motion.div
             key="empty"
             initial={{ opacity: 0, scale: 0.97 }}
