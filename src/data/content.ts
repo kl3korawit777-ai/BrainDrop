@@ -6,6 +6,7 @@ export interface ContentItem {
   slidesEmbedUrl: string
   driveUrl?: string
   pdfUrl?: string
+  canvaUrl?: string
   coverUrl?: string
   slideCount: number
   updatedAt: string

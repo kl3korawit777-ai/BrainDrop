@@ -1,6 +1,6 @@
 import { Suspense, useState, useEffect, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Html, Environment, useGLTF, Center } from '@react-three/drei'
+import { OrbitControls, Html, useGLTF, Center, useProgress } from '@react-three/drei'
 import { ArrowLeft, Pause, Play, Sparkles, MousePointerClick, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import * as THREE from 'three'
@@ -122,27 +122,22 @@ function NumberedHotspot({
   )
 }
 
-/** ทาสีสมองให้เป็น warm coral แบบกายวิภาค + auto-scale ให้แกนยาวสุด ≈ 3 หน่วย */
+/** ทาสีสมองให้เป็น warm coral แบบกายวิภาค + auto-scale ให้แกนยาวสุด ≈ 3 หน่วย
+ *  ใช้ MeshStandardMaterial (เบากว่า MeshPhysicalMaterial ~50%) — ไม่ใช้ clearcoat/sheen
+ *  คุณภาพยังดูดี เพราะมี emissive + lights หลายดวง */
 function BrainModel({ tint }: { tint: string }) {
   const { scene } = useGLTF(MODEL_URL)
   useEffect(() => {
     scene.traverse((obj) => {
       if (!(obj instanceof THREE.Mesh)) return
-      const mat = new THREE.MeshPhysicalMaterial({
+      const mat = new THREE.MeshStandardMaterial({
         color: new THREE.Color(tint),
-        roughness: 0.62,
-        metalness: 0.02,
-        clearcoat: 0.35,
-        clearcoatRoughness: 0.45,
-        sheen: 0.55,
-        sheenColor: new THREE.Color('#FFD8C8'),
-        sheenRoughness: 0.6,
+        roughness: 0.58,
+        metalness: 0.03,
         emissive: new THREE.Color('#3E1A14'),
-        emissiveIntensity: 0.08,
+        emissiveIntensity: 0.1,
       })
       obj.material = mat
-      obj.castShadow = true
-      obj.receiveShadow = true
     })
     scene.scale.set(1, 1, 1)
     scene.updateMatrixWorld(true)
@@ -153,6 +148,38 @@ function BrainModel({ tint }: { tint: string }) {
     if (maxDim > 0) scene.scale.setScalar(3 / maxDim)
   }, [scene, tint])
   return <primitive object={scene} />
+}
+
+/** Progress bar — แสดงเปอร์เซ็นต์ขณะดาวน์โหลด .bin (29MB) */
+function LoadingProgress() {
+  const { progress, active } = useProgress()
+  return (
+    <Html center>
+      <div style={{
+        padding: '14px 22px', borderRadius: 'var(--radius)',
+        background: 'color-mix(in oklab, var(--surface) 94%, transparent)',
+        border: '1px solid var(--border-strong)',
+        fontFamily: 'var(--font)',
+        boxShadow: 'var(--shadow-md)',
+        minWidth: 220,
+      }}>
+        <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+          <span>กำลังโหลดโมเดล…</span>
+          <span style={{ color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
+            {active ? Math.round(progress) : 0}%
+          </span>
+        </div>
+        <div style={{ height: 4, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
+          <div style={{
+            height: '100%', width: `${progress}%`,
+            background: 'linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 100%)',
+            transition: 'width 200ms ease',
+            borderRadius: 2,
+          }} />
+        </div>
+      </div>
+    </Html>
+  )
 }
 
 useGLTF.preload(MODEL_URL)
@@ -512,29 +539,17 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
       <div className="r3f-fill" style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
         <Canvas
           camera={{ position: [4.2, 1.8, 5.4], fov: 42 }}
-          dpr={[1, 2]}
-          gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false }}
+          dpr={[1, 1.5]}
+          gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false, powerPreference: 'high-performance' }}
+          frameloop={autoRotate ? 'always' : 'demand'}
           style={{ width: '100%', height: '100%', display: 'block' }}
         >
-          <Suspense fallback={
-            <Html center>
-              <div style={{
-                padding: '12px 18px', borderRadius: 'var(--radius)',
-                background: 'color-mix(in oklab, var(--surface) 94%, transparent)',
-                border: '1px solid var(--border-strong)',
-                fontSize: 13, color: 'var(--text)', fontWeight: 600,
-                fontFamily: 'var(--font)',
-                boxShadow: 'var(--shadow-md)',
-              }}>
-                กำลังโหลดโมเดล…
-              </div>
-            </Html>
-          }>
-            <Environment preset="apartment" />
-            <ambientLight intensity={0.55} color="#FFF1DC" />
-            <directionalLight position={[5, 7, 4]} intensity={1.0} color="#FFE3C2" />
-            <directionalLight position={[-5, -2, -3]} intensity={0.35} color="#B8D5E0" />
-            <pointLight position={[0, -3, 2]} intensity={0.4} color="#C8DBB4" distance={8} />
+          <Suspense fallback={<LoadingProgress />}>
+            {/* ไม่ใช้ Environment HDR (ประหยัด ~1-3MB) — ใช้ลำแสง 3 ดวงให้ดูอบอุ่นพอ */}
+            <ambientLight intensity={0.85} color="#FFF1DC" />
+            <directionalLight position={[5, 7, 4]} intensity={1.15} color="#FFE3C2" />
+            <directionalLight position={[-5, -2, -3]} intensity={0.45} color="#B8D5E0" />
+            <pointLight position={[0, -3, 2]} intensity={0.5} color="#C8DBB4" distance={8} />
 
             <Center>
               <BrainModel tint="#E0A398" />

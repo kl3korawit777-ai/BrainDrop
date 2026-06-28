@@ -13,6 +13,7 @@ create table if not exists public.summaries (
   drive_url         text,
   cover_url         text,
   pdf_url           text,
+  canva_url         text,
   slide_count       int  not null default 0,
   updated_at        date not null default current_date,
   created_at        timestamptz not null default now()
@@ -21,6 +22,7 @@ create table if not exists public.summaries (
 -- ถ้าตารางมีอยู่แล้ว (อัปเกรดภายหลัง) ให้เพิ่มคอลัมน์ใหม่:
 alter table public.summaries add column if not exists cover_url text;
 alter table public.summaries add column if not exists pdf_url   text;
+alter table public.summaries add column if not exists canva_url text;
 
 -- ─── ตารางหมวดหมู่/วิชา ──────────────────────────────────────────────
 -- จัดการรูปการ์ดวิชาในหน้าแรก + หมวดหมู่ใหญ่ + ลำดับ

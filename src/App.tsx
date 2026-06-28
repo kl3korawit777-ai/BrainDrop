@@ -6,10 +6,11 @@ import Home from './pages/Home'
 import AllSubjects from './pages/AllSubjects'
 import SlidesViewer from './components/SlidesViewer'
 import CoverPage from './components/CoverPage'
-import BrainViewer from './components/BrainViewer'
 import { useStore } from './store/useStore'
 
 const Admin = lazy(() => import('./pages/Admin'))
+// BrainViewer ดึง three.js + drei (~700KB) → lazy-load ออกจาก main bundle
+const BrainViewer = lazy(() => import('./components/BrainViewer'))
 
 export default function App() {
   const loadContent = useStore(s => s.loadContent)
@@ -78,7 +79,15 @@ function PublicSite() {
           {(() => {
             const openItem = openItemId ? content.find(c => c.id === openItemId) : null
             if (openItem) return <SlidesViewer item={openItem} onBack={() => setOpenItemId(null)} />
-            if (view === 'brain') return <BrainViewer onBack={() => setView('home')} />
+            if (view === 'brain') return (
+              <Suspense fallback={
+                <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
+                  กำลังเปิดสมอง 3 มิติ…
+                </div>
+              }>
+                <BrainViewer onBack={() => setView('home')} />
+              </Suspense>
+            )
             if (view === 'subjects') return <AllSubjects onOpenItem={setOpenItemId} />
             return (
               <AnimatePresence mode="wait">

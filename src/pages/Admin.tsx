@@ -12,8 +12,8 @@ import {
 import { SUBJECT_CONFIG, getTagStyle, type ContentItem } from '../data/content'
 
 const EMPTY: ContentItem = {
-  id: '', title: '', subject: Object.keys(SUBJECT_CONFIG)[0] ?? '',
-  tags: [], slidesEmbedUrl: '', driveUrl: '', slideCount: 0,
+  id: '', title: '', subject: '',
+  tags: [], slidesEmbedUrl: '', driveUrl: '', canvaUrl: '', slideCount: 0,
   updatedAt: new Date().toISOString().slice(0, 10),
 }
 
@@ -383,7 +383,7 @@ function EditMetaForm({ item, onCancel, onSaved }: {
 
       <form onSubmit={submit} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '1.5rem' }}>
         <label style={{ ...labelStyle, marginTop: 0 }}>ชื่อวิชา *</label>
-        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="เช่น ชีววิทยา" disabled={!isNew} required />
+        <input type="text" value={name} onChange={e => setName(e.target.value)} disabled={!isNew} required />
         {!isNew && (
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-subtle)', marginTop: 4 }}>
             แก้ชื่อวิชาไม่ได้ — ถ้าต้องการเปลี่ยน ให้ลบแล้วเพิ่มใหม่
@@ -391,16 +391,16 @@ function EditMetaForm({ item, onCancel, onSaved }: {
         )}
 
         <label style={labelStyle}>หมวดหมู่ใหญ่ (เช่น "วิทยาศาสตร์", "ภาษา")</label>
-        <input type="text" value={category} onChange={e => setCategory(e.target.value)} placeholder="ปล่อยว่าง = ไม่จัดหมวด" />
+        <input type="text" value={category} onChange={e => setCategory(e.target.value)} />
 
         <label style={labelStyle}>รูปการ์ดวิชา (URL — ใช้ในหน้าแรก fan)</label>
-        <input type="text" value={coverUrl} onChange={e => setCoverUrl(e.target.value)} placeholder="https://...jpg — ปล่อยว่างจะใช้รูปสไลด์อัตโนมัติ" />
+        <input type="text" value={coverUrl} onChange={e => setCoverUrl(e.target.value)} />
         {coverUrl && (
           <img src={coverUrl} alt="preview" loading="lazy" style={{ marginTop: 8, width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
         )}
 
         <label style={labelStyle}>ลำดับ (เลขน้อย = แสดงก่อน)</label>
-        <input type="text" inputMode="numeric" value={sortOrder} onChange={e => setSortOrder(e.target.value.replace(/\D/g, ''))} placeholder="0" />
+        <input type="text" inputMode="numeric" value={sortOrder} onChange={e => setSortOrder(e.target.value.replace(/\D/g, ''))} />
 
         {error && (
           <p style={{ color: '#EF4444', fontSize: 'var(--text-sm)', marginTop: 16, display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -446,9 +446,9 @@ function EditForm({ item, onCancel, onSaved }: {
     const tags = tagInput.split(/[\s,]+/).map(t => t.trim()).filter(Boolean).map(t => t.startsWith('#') ? t : '#' + t)
     const id = form.id || form.title.toLowerCase().replace(/[^a-z0-9ก-๙]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 50) || `item-${Date.now()}`
     if (!form.title.trim()) { setError('กรุณาใส่ชื่อเรื่อง'); return }
-    // ต้องมีแหล่งเนื้อหาอย่างน้อย 1 อย่าง — Google Slides หรือ Drive/PDF (รองรับสไลด์หน้าเดียว)
-    if (!form.slidesEmbedUrl.trim() && !form.pdfUrl?.trim()) {
-      setError('ใส่ Google Slides URL หรือลิงก์ Drive/PDF อย่างน้อย 1 อัน')
+    // ต้องมีแหล่งเนื้อหาอย่างน้อย 1 อย่าง — Google Slides / Canva / Drive / PDF
+    if (!form.slidesEmbedUrl.trim() && !form.pdfUrl?.trim() && !form.canvaUrl?.trim()) {
+      setError('ใส่ Google Slides, Canva หรือลิงก์ Drive/PDF อย่างน้อย 1 อัน')
       return
     }
 
@@ -474,37 +474,40 @@ function EditForm({ item, onCancel, onSaved }: {
 
       <form onSubmit={submit} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '1.5rem' }}>
         <label style={{ ...labelStyle, marginTop: 0 }}>ชื่อเรื่อง *</label>
-        <input type="text" value={form.title} onChange={e => set('title', e.target.value)} placeholder="ชีววิทยา บทที่ 1–3 เซลล์" required />
+        <input type="text" value={form.title} onChange={e => set('title', e.target.value)} required />
 
         <label style={labelStyle}>วิชา *</label>
-        <input type="text" value={form.subject} onChange={e => set('subject', e.target.value)} placeholder="ชีววิทยา" list="subject-list" required />
+        <input type="text" value={form.subject} onChange={e => set('subject', e.target.value)} list="subject-list" required />
         <datalist id="subject-list">
           {Object.keys(SUBJECT_CONFIG).map(s => <option key={s} value={s} />)}
         </datalist>
 
         <label style={labelStyle}>Tags (เว้นวรรคหรือคอมมา)</label>
-        <input type="text" value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="#midterm #บทที่1 #สรุป" />
+        <input type="text" value={tagInput} onChange={e => setTagInput(e.target.value)} />
 
         <label style={labelStyle}>Google Slides embed URL</label>
-        <input type="text" value={form.slidesEmbedUrl} onChange={e => set('slidesEmbedUrl', e.target.value)} placeholder="https://docs.google.com/presentation/d/.../embed — ปล่อยว่างได้ถ้าใช้ Drive/PDF" />
+        <input type="text" value={form.slidesEmbedUrl} onChange={e => set('slidesEmbedUrl', e.target.value)} />
         <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-subtle)', marginTop: 4 }}>
-          ใส่อันใดอันหนึ่ง: Google Slides ด้านบน <strong>หรือ</strong> ลิงก์ Drive/PDF ด้านล่าง (สำหรับสไลด์หน้าเดียว)
+          ใส่อันใดอันหนึ่ง: Google Slides, Canva, หรือลิงก์ Drive/PDF (สำหรับสไลด์หน้าเดียว)
         </p>
 
+        <label style={labelStyle}>ลิงก์ Canva (ไม่บังคับ)</label>
+        <input type="text" value={form.canvaUrl ?? ''} onChange={e => set('canvaUrl', e.target.value)} />
+
         <label style={labelStyle}>ลิงก์ดาวน์โหลด PDF (ไม่บังคับ)</label>
-        <input type="text" value={form.driveUrl ?? ''} onChange={e => set('driveUrl', e.target.value)} placeholder="https://drive.google.com/..." />
+        <input type="text" value={form.driveUrl ?? ''} onChange={e => set('driveUrl', e.target.value)} />
 
         <label style={labelStyle}>ลิงก์ Google Drive — สไลด์เดี่ยว/PDF หน้าเดียว (ไม่บังคับ)</label>
-        <input type="text" value={form.pdfUrl ?? ''} onChange={e => set('pdfUrl', e.target.value)} placeholder="https://drive.google.com/file/d/.../view — รูปหรือสไลด์หน้าเดียว" />
+        <input type="text" value={form.pdfUrl ?? ''} onChange={e => set('pdfUrl', e.target.value)} />
 
         <label style={labelStyle}>รูปปก (URL รูปภาพ — ปล่อยว่างเพื่อดึงจากสไลด์อัตโนมัติ)</label>
-        <input type="text" value={form.coverUrl ?? ''} onChange={e => set('coverUrl', e.target.value)} placeholder="ปล่อยว่าง = ใช้รูปสไลด์แรกอัตโนมัติ" />
+        <input type="text" value={form.coverUrl ?? ''} onChange={e => set('coverUrl', e.target.value)} />
         {form.coverUrl && (
           <img src={form.coverUrl} alt="ตัวอย่างรูปปก" loading="lazy" style={{ marginTop: 8, width: '100%', maxHeight: 140, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
         )}
 
         <label style={labelStyle}>จำนวนสไลด์</label>
-        <input type="text" inputMode="numeric" value={slideCountInput} onChange={e => setSlideCountInput(e.target.value.replace(/\D/g, ''))} placeholder="22" />
+        <input type="text" inputMode="numeric" value={slideCountInput} onChange={e => setSlideCountInput(e.target.value.replace(/\D/g, ''))} />
 
         {error && (
           <p style={{ color: '#EF4444', fontSize: 'var(--text-sm)', marginTop: 16, display: 'flex', gap: 6, alignItems: 'center' }}>

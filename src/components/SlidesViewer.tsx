@@ -82,6 +82,16 @@ export default function SlidesViewer({ item, onBack }: Props) {
               <ExternalLink size={14} /> เปิดใน Slides
             </a>
           )}
+          {item.canvaUrl && (
+            <a href={item.canvaUrl} target="_blank" rel="noreferrer" style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '6px 12px', borderRadius: 8,
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              color: 'var(--text-muted)', fontSize: 13,
+            }}>
+              <ExternalLink size={14} /> เปิดใน Canva
+            </a>
+          )}
         </div>
       </div>
 
