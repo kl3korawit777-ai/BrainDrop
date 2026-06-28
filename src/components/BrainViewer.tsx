@@ -199,27 +199,15 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
   return (
     <div
       ref={wrapperRef}
+      className="aurora-bg aurora-grain"
       style={{
         position: 'relative',
         width: '100%', height: '100vh',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
         fontFamily: 'var(--font)',
-        // Warm aurora — รุ่งอรุณ ไม่ใช่ purple-to-blue ทั่วๆ ไป
-        background: `
-          radial-gradient(ellipse 80% 60% at 18% 12%, rgba(255, 214, 180, 0.55) 0%, transparent 55%),
-          radial-gradient(ellipse 70% 55% at 85% 20%, rgba(195, 220, 200, 0.45) 0%, transparent 60%),
-          radial-gradient(ellipse 90% 70% at 50% 110%, rgba(220, 200, 230, 0.40) 0%, transparent 60%),
-          linear-gradient(180deg, #FCF5E9 0%, #F7EDDF 45%, #EFE5D5 100%)
-        `,
       }}
     >
-      {/* Grain texture overlay — soft noise ไม่ให้พื้นเรียบเกินไป */}
-      <div aria-hidden style={{
-        position: 'absolute', inset: 0, zIndex: 1,
-        background: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.2 0 0 0 0 0.15 0 0 0 0.13 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")`,
-        opacity: 0.35, mixBlendMode: 'multiply', pointerEvents: 'none',
-      }} />
 
       {/* ── Header ── */}
       <motion.div
@@ -236,11 +224,11 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
           onClick={onBack}
           aria-label="กลับ"
           style={{
-            background: 'rgba(253, 246, 235, 0.85)',
-            border: '1px solid rgba(180, 130, 90, 0.18)',
-            cursor: 'pointer', color: '#5C3A24',
-            display: 'flex', padding: 11, borderRadius: 999,
-            boxShadow: '0 6px 18px rgba(160, 110, 75, 0.10)',
+            background: 'color-mix(in oklab, var(--surface) 85%, transparent)',
+            border: '1px solid var(--border-strong)',
+            cursor: 'pointer', color: 'var(--text)',
+            display: 'flex', padding: 11, borderRadius: 'var(--radius-pill)',
+            boxShadow: 'var(--shadow-sm)',
             pointerEvents: 'auto',
             backdropFilter: 'blur(14px)',
             WebkitBackdropFilter: 'blur(14px)',
@@ -254,21 +242,22 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
 
         <div style={{ pointerEvents: 'auto', flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <Sparkles size={14} style={{ color: '#C9824F' }} />
+            <Sparkles size={14} style={{ color: 'var(--accent)' }} />
             <span style={{
-              fontSize: 10.5, fontWeight: 600, letterSpacing: '0.18em',
-              textTransform: 'uppercase', color: '#9C6A42',
+              fontSize: 10.5, fontWeight: 700, letterSpacing: '0.18em',
+              textTransform: 'uppercase', color: 'var(--accent)',
             }}>
               Anatomy · 3D
             </span>
           </div>
           <h1 style={{
-            fontSize: 26, fontWeight: 700, letterSpacing: '-0.022em',
-            color: '#2A1810', margin: '2px 0 0', lineHeight: 1.1,
+            fontFamily: 'var(--font-display)',
+            fontSize: 28, fontWeight: 800, letterSpacing: '-0.022em',
+            color: 'var(--text)', margin: '2px 0 0', lineHeight: 1.1,
           }}>
             สมอง 3 มิติ
           </h1>
-          <p style={{ fontSize: 12, color: '#7A5439', margin: '3px 0 0', fontWeight: 500 }}>
+          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '4px 0 0', fontWeight: 500 }}>
             ลากเพื่อหมุน · เลื่อนเพื่อซูม · คลิกชื่อในเลเจนด์เพื่อโฟกัส
           </p>
         </div>
@@ -280,15 +269,15 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
           style={{
             pointerEvents: 'auto',
             display: 'flex', alignItems: 'center', gap: 8,
-            padding: '10px 16px', borderRadius: 999,
+            padding: '10px 16px', borderRadius: 'var(--radius-pill)',
             background: autoRotate
-              ? 'linear-gradient(135deg, #C9824F 0%, #B86A3C 100%)'
-              : 'rgba(253, 246, 235, 0.85)',
-            color: autoRotate ? '#FFF8EE' : '#5C3A24',
-            border: autoRotate ? 'none' : '1px solid rgba(180, 130, 90, 0.18)',
+              ? 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)'
+              : 'color-mix(in oklab, var(--surface) 85%, transparent)',
+            color: autoRotate ? '#FFFFFF' : 'var(--text)',
+            border: autoRotate ? 'none' : '1px solid var(--border-strong)',
             boxShadow: autoRotate
-              ? '0 8px 24px rgba(201, 130, 79, 0.35), inset 0 1px 0 rgba(255,255,255,0.2)'
-              : '0 6px 18px rgba(160, 110, 75, 0.10)',
+              ? 'var(--shadow-glow), inset 0 1px 0 rgba(255,255,255,0.18)'
+              : 'var(--shadow-sm)',
             cursor: 'pointer', fontFamily: 'var(--font)',
             fontSize: 12.5, fontWeight: 600,
             backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
@@ -307,17 +296,17 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
         transition={{ delay: 0.35, duration: 0.45, ease: [0.22, 0.9, 0.3, 1] }}
         style={{
           position: 'absolute', bottom: 22, left: 22, zIndex: 12,
-          background: 'rgba(253, 246, 235, 0.82)',
+          background: 'color-mix(in oklab, var(--surface) 82%, transparent)',
           backdropFilter: 'blur(16px) saturate(1.1)',
           WebkitBackdropFilter: 'blur(16px) saturate(1.1)',
-          border: '1px solid rgba(180, 130, 90, 0.16)',
-          borderRadius: 20, padding: '14px 16px 12px',
-          boxShadow: '0 12px 32px rgba(120, 80, 50, 0.12)',
-          maxWidth: 240,
+          border: '1px solid var(--border-strong)',
+          borderRadius: 'var(--radius-lg)', padding: '14px 16px 12px',
+          boxShadow: 'var(--shadow-md)',
+          maxWidth: 244,
         }}
       >
         <p style={{
-          fontSize: 10, fontWeight: 700, color: '#9C6A42',
+          fontSize: 10, fontWeight: 700, color: 'var(--accent)',
           margin: '0 0 9px', letterSpacing: '0.16em', textTransform: 'uppercase',
         }}>
           ส่วนประกอบ · Regions
@@ -352,13 +341,13 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
                 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    fontSize: 12, color: '#3A2618', fontWeight: 600,
+                    fontSize: 12, color: 'var(--text)', fontWeight: 600,
                     lineHeight: 1.15, letterSpacing: '-0.005em',
                   }}>
                     {p.name}
                   </div>
                   <div style={{
-                    fontSize: 10.5, color: '#9A7858', fontWeight: 500,
+                    fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 500,
                     lineHeight: 1.2, marginTop: 1,
                   }}>
                     {p.thai}
@@ -381,19 +370,19 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
             style={{
               position: 'absolute', bottom: 26, right: 26, zIndex: 12,
               display: 'flex', alignItems: 'center', gap: 8,
-              padding: '9px 14px', borderRadius: 999,
-              background: 'linear-gradient(135deg, rgba(58,38,24,0.88) 0%, rgba(92,58,36,0.88) 100%)',
-              color: '#FCF5E9',
+              padding: '9px 14px', borderRadius: 'var(--radius-pill)',
+              background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%)',
+              color: '#FFFFFF',
               fontSize: 11.5, fontWeight: 600, letterSpacing: '0.01em',
               backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-              boxShadow: '0 10px 28px rgba(60, 38, 22, 0.30)',
-              border: '1px solid rgba(255, 220, 180, 0.12)',
+              boxShadow: 'var(--shadow-glow)',
+              border: '1px solid color-mix(in oklab, var(--accent-3) 30%, transparent)',
               pointerEvents: 'none',
             }}
           >
             <span style={{
               width: 6, height: 6, borderRadius: '50%',
-              background: '#E0A867', boxShadow: '0 0 8px #E0A867',
+              background: 'var(--accent-3)', boxShadow: '0 0 8px var(--accent-3)',
               animation: 'braindrop-pulse 1.6s ease-in-out infinite',
             }} />
             ลากเมาส์เพื่อหมุนสมอง
@@ -414,12 +403,12 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
           <Suspense fallback={
             <Html center>
               <div style={{
-                padding: '12px 18px', borderRadius: 14,
-                background: 'rgba(253, 246, 235, 0.94)',
-                border: '1px solid rgba(180, 130, 90, 0.18)',
-                fontSize: 13, color: '#5C3A24', fontWeight: 600,
+                padding: '12px 18px', borderRadius: 'var(--radius)',
+                background: 'color-mix(in oklab, var(--surface) 94%, transparent)',
+                border: '1px solid var(--border-strong)',
+                fontSize: 13, color: 'var(--text)', fontWeight: 600,
                 fontFamily: 'var(--font)',
-                boxShadow: '0 10px 28px rgba(120, 80, 50, 0.15)',
+                boxShadow: 'var(--shadow-md)',
               }}>
                 กำลังโหลดโมเดล…
               </div>

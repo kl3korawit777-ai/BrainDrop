@@ -63,11 +63,10 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     const colors: number[] = []
     const geometry = new THREE.BufferGeometry()
 
-    // โทนจุดเข้ากับ Warm Aurora — light: walnut warm-brown, dark: sand cream
-    // (ไม่ใช้ดำดิบหรือเทาเย็น เพื่อไม่ให้ตัดธีมแสงธรรมชาติ)
-    const r = theme === 'dark' ? 244 : 90
-    const g = theme === 'dark' ? 231 : 53
-    const b = theme === 'dark' ? 212 : 31
+    // โทนจุดเข้ากับ Cobalt Field — light: deep cobalt, dark: sky blue
+    const r = theme === 'dark' ?  91 :  11
+    const g = theme === 'dark' ? 168 :  44
+    const b = theme === 'dark' ? 255 : 159
     for (let ix = 0; ix < AMOUNTX; ix++) {
       for (let iy = 0; iy < AMOUNTY; iy++) {
         const x = ix * SEPARATION - (AMOUNTX * SEPARATION) / 2
