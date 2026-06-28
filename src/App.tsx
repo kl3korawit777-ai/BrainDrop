@@ -47,23 +47,28 @@ function PublicSite() {
         {!entered && <CoverPage key="cover" onEnter={() => setEntered(true)} />}
       </AnimatePresence>
 
-      {/* ปุ่มลอย: กลับหน้าแรกของเว็บ (หน้าปก) — ซ่อนใน brain viewer (มี back ในตัว viewer แล้ว) */}
+      {/* ไอคอนลอย: กลับหน้าปก — เล็กเพื่อไม่บัง search/filter / brain viewer มี back ในตัว */}
       {entered && view !== 'brain' && !openItemId && (
         <button
           onClick={goCover}
-          aria-label="กลับหน้าแรก"
+          aria-label="กลับหน้าปก"
+          title="กลับหน้าปก"
+          className="cover-jump-btn"
           style={{
-            position: 'fixed', top: 16, right: 16, zIndex: 45,
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '8px 15px', borderRadius: 'var(--radius-pill)',
-            background: 'var(--surface)', border: '1px solid var(--border-strong)',
+            position: 'fixed', bottom: 18, right: 18, zIndex: 45,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 40, height: 40, padding: 0, borderRadius: '50%',
+            background: 'color-mix(in oklab, var(--surface) 90%, transparent)',
+            border: '1px solid var(--border-strong)',
             boxShadow: 'var(--shadow-sm)', cursor: 'pointer',
-            color: 'var(--text-muted)', fontFamily: 'var(--font)',
-            fontSize: 13, fontWeight: 500,
-            backdropFilter: 'blur(6px)',
+            color: 'var(--text-muted)',
+            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+            transition: 'transform 160ms ease, color 160ms ease',
           }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.color = 'var(--accent)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.color = 'var(--text-muted)' }}
         >
-          <HomeIcon size={15} /> หน้าแรก
+          <HomeIcon size={17} />
         </button>
       )}
 

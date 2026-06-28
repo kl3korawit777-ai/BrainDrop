@@ -32,12 +32,12 @@ const FAN_POSITIONS = [
 ];
 
 function getResponsiveMultiplier(width: number) {
-  if (width < 360) return 0.14;
-  if (width < 420) return 0.18;
-  if (width < 480) return 0.22;
-  if (width < 640) return 0.32;
-  if (width < 768) return 0.48;
-  if (width < 1024) return 0.72;
+  if (width < 360) return 0.34;
+  if (width < 420) return 0.40;
+  if (width < 480) return 0.48;
+  if (width < 640) return 0.58;
+  if (width < 768) return 0.72;
+  if (width < 1024) return 0.86;
   return 1.0;
 }
 
@@ -46,18 +46,16 @@ function getResponsiveMultiplier(width: number) {
  * distances when the viewport is too short for the ideal layout height.
  */
 function getHeightMultiplier(width: number) {
-  // Ideal layout heights (in px at 16px root) matching the CSS breakpoints
+  // Ideal layout heights — มือถือใช้ viewport จริงหัก search row (~7.5rem = 120px)
   let idealPx: number;
-  if (width < 420) idealPx = 19 * 16;       // 304px
-  else if (width < 480) idealPx = 22 * 16;  // 352px
-  else if (width < 640) idealPx = 26 * 16;  // 416px
-  else if (width < 768) idealPx = 28 * 16;  // 448px
-  else if (width < 1024) idealPx = 34 * 16; // 544px
-  else idealPx = 38 * 16;                    // 608px
+  if (width < 640) idealPx = window.innerHeight - 120;
+  else if (width < 768) idealPx = 30 * 16;
+  else if (width < 1024) idealPx = 34 * 16;
+  else idealPx = 38 * 16;
 
-  const available = window.innerHeight * 0.7; // 70vh budget
+  const available = window.innerHeight - 120;
   if (available >= idealPx) return 1;
-  return available / idealPx;
+  return Math.max(0.62, available / idealPx);
 }
 
 function getSlotConfig(totalCards: number, slot: number) {
@@ -91,14 +89,14 @@ export default function SocialCards({ cards }: SocialCardsProps) {
   const getVisibleMap = useCallback((center: number) => {
     const map = new Map<number, number>();
     if (!needsPagination) {
-      cards.forEach((_, i) => map.set(i, i));
+      for (let i = 0; i < totalCards; i++) map.set(i, i);
       return map;
     }
     for (let slot = 0; slot < MAX_VISIBLE; slot++) {
       map.set(((center + slot - HALF) % totalCards + totalCards) % totalCards, slot);
     }
     return map;
-  }, [totalCards, needsPagination, cards]);
+  }, [totalCards, needsPagination]);
 
   const cycle = useCallback((direction: "left" | "right") => {
     if (isAnimating.current || !needsPagination) return;
@@ -115,6 +113,8 @@ export default function SocialCards({ cards }: SocialCardsProps) {
 
     const cardElements = Array.from(container.querySelectorAll<HTMLElement>(".fan-card"));
     if (!cardElements.length) return;
+    // กัน RAF ของ tab ที่ throttle ทำ tween ค้าง (เพิ่ม gsap.ticker.wake เพื่อ kick ticker)
+    gsap.ticker.wake();
 
     const visibleMap = getVisibleMap(centerIndex);
     const previouslyVisible = prevVisible.current;
@@ -153,7 +153,7 @@ export default function SocialCards({ cards }: SocialCardsProps) {
 
         if (isFirstMount) {
           gsap.set(card, { x: 0, y: `${12 * hMult}rem`, rotation: 0, scale: 0.5, opacity: 0 });
-          gsap.to(card, { ...target, duration: 1.2, ease: "elastic.out(1.05,.78)", delay: 0.2 + slot * 0.06, onComplete: onCardDone });
+          gsap.to(card, { ...target, duration: 1.2, ease: "elastic.out(1.05,.78)", delay: 0.2 + slot * 0.06, overwrite: true, onComplete: onCardDone });
         } else if (!wasVisible) {
           const enterX = direction === "right" ? 40 : -40;
           gsap.set(card, { x: `${enterX}rem`, y: `${y * hMult}rem`, rotation: direction === "right" ? 30 : -30, scale: 0.5, opacity: 0 });
@@ -254,6 +254,9 @@ export default function SocialCards({ cards }: SocialCardsProps) {
       container.removeEventListener("mouseleave", onMouseLeave);
       window.removeEventListener("resize", onResize);
       if (leaveTimer) clearTimeout(leaveTimer);
+      // Kill in-flight tweens so a Strict-Mode re-mount cannot leave cards stuck
+      // (gsap.set in setup #2 would otherwise race with delayed tweens from #1)
+      cardElements.forEach(el => gsap.killTweensOf(el));
     };
   }, [centerIndex, totalCards, getVisibleMap, needsPagination]);
 
@@ -266,7 +269,7 @@ export default function SocialCards({ cards }: SocialCardsProps) {
   );
 
   return (
-    <section className="flex flex-col items-center w-full py-4 lg:py-8 px-4 md:px-8 relative z-20">
+    <section className="flex flex-col items-center w-full py-2 lg:py-6 px-2 md:px-8 relative z-20">
       <div className="flex items-center justify-center w-full max-w-[90rem]">
         <div ref={containerRef} className="fan-layout flex relative justify-center items-center w-full max-w-[80rem]">
           {cards.map((card, index) => {

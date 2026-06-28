@@ -71,9 +71,9 @@ export default function Home() {
   if (activeSubject === 'ทั้งหมด') {
     const searching = searchQuery.trim() !== '' || activeTags.length > 0
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="home-fan-wrap" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         {/* แถบค้นหา/filter ด้านบน */}
-        <div style={{ padding: '3.25rem 1.25rem 0', maxWidth: 720, margin: '0 auto', width: '100%' }}>
+        <div className="home-search-row" style={{ padding: '1.4rem 1.25rem 0', maxWidth: 720, margin: '0 auto', width: '100%' }}>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => setSidebarOpen(true)}
@@ -182,8 +182,8 @@ export default function Home() {
             )}
           </div>
         ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-            <div style={{ width: '100%', overflow: 'hidden' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+            <div style={{ width: '100%' }}>
               {contentLoading
                 ? <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>กำลังโหลด...</p>
                 : <SocialCards cards={subjectCards} />}

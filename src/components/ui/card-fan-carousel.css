@@ -1,21 +1,25 @@
 /* card-fan-carousel base layout
    คอมโพเนนต์ใช้คลาส .fan-layout / .fan-card ที่ต้องนิยามขนาด+ตำแหน่งเอง
    (GSAP คุม transform: x/y/rotation/scale — CSS คุมขนาดการ์ดและจุดศูนย์กลาง)
-   ค่าความสูง layout อิงตาม breakpoint ใน getHeightMultiplier(): 22/26/28/34/38rem */
+   ค่าความสูง layout อิงตาม breakpoint ใน getHeightMultiplier() — ใช้ dvh
+   เพื่อกินพื้นที่จริงของจอมือถือ (ไม่ทิ้งกรอบล่างจาก URL bar) */
 
 .fan-layout {
-  height: 19rem;
+  /* มือถือ: ขยายเต็มจอ หักออก ~แถบค้นหา + bottom safe-area
+     ไม่ทิ้งกรอบโล่งด้านล่าง */
+  height: calc(100dvh - 7.5rem);
+  min-height: 22rem;
 }
 
 .fan-card {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 6.6rem;
-  height: 9.24rem;
-  margin-left: -3.3rem;
-  margin-top: -4.62rem;
-  border-radius: 0.9rem;
+  width: 9rem;
+  height: 12.6rem;
+  margin-left: -4.5rem;
+  margin-top: -6.3rem;
+  border-radius: 1rem;
   overflow: hidden;
   background: var(--surface, #fff);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.10);
@@ -38,18 +42,18 @@
 }
 
 @media (min-width: 420px) {
-  .fan-layout { height: 22rem; }
-  .fan-card { width: 8rem; height: 11.2rem; margin-left: -4rem; margin-top: -5.6rem; border-radius: 1rem; }
+  .fan-layout { height: calc(100dvh - 7.5rem); }
+  .fan-card { width: 10rem; height: 14rem; margin-left: -5rem; margin-top: -7rem; }
 }
 
 @media (min-width: 480px) {
-  .fan-layout { height: 26rem; }
-  .fan-card { width: 9rem; height: 12.6rem; margin-left: -4.5rem; margin-top: -6.3rem; }
+  .fan-layout { height: calc(100dvh - 8rem); }
+  .fan-card { width: 11rem; height: 15.4rem; margin-left: -5.5rem; margin-top: -7.7rem; }
 }
 
 @media (min-width: 640px) {
-  .fan-layout { height: 28rem; }
-  .fan-card { width: 10.5rem; height: 14.7rem; margin-left: -5.25rem; margin-top: -7.35rem; border-radius: 1.15rem; }
+  .fan-layout { height: 30rem; }
+  .fan-card { width: 11.5rem; height: 16.1rem; margin-left: -5.75rem; margin-top: -8.05rem; border-radius: 1.15rem; }
 }
 
 @media (min-width: 768px) {

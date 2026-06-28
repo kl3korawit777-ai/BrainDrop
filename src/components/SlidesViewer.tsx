@@ -85,12 +85,16 @@ export default function SlidesViewer({ item, onBack }: Props) {
         </div>
       </div>
 
-      {/* Slides iframe — เลื่อนด้วยลูกศรในตัว Google Slides */}
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 'var(--radius)', overflow: 'hidden',
-        aspectRatio: '16/9', position: 'relative',
-      }}>
+      {/* Slides iframe — บนมือถือจอใหญ่ขึ้น + touch-action ให้กดปุ่ม < > ใน Slides ง่าย */}
+      <div
+        className="slides-frame"
+        style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)', overflow: 'hidden',
+          position: 'relative',
+          touchAction: 'manipulation',
+        }}
+      >
         {!embedSrc ? (
           <div style={{
             position: 'absolute', inset: 0, display: 'flex',
@@ -109,10 +113,20 @@ export default function SlidesViewer({ item, onBack }: Props) {
             src={embedSrc}
             title={item.title}
             allowFullScreen
-            style={{ width: '100%', height: '100%', border: 'none' }}
+            style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
           />
         )}
       </div>
+      <style>{`
+        .slides-frame { aspect-ratio: 16 / 9; }
+        @media (max-width: 720px) {
+          .slides-frame {
+            aspect-ratio: auto;
+            height: 62dvh;
+            min-height: 360px;
+          }
+        }
+      `}</style>
 
       {/* Hint + mark-as-read */}
       <div style={{
@@ -123,7 +137,7 @@ export default function SlidesViewer({ item, onBack }: Props) {
           <MoveHorizontal size={15} />
           {isPdfFallback
             ? <>หน้าเดียวจาก Drive · กด <strong style={{ color: 'var(--text)' }}>เต็มจอ</strong> เพื่อดูใหญ่</>
-            : <>เลื่อนสไลด์ด้วยลูกศร <strong style={{ color: 'var(--text)' }}>‹ ›</strong> ที่มุมล่างของสไลด์ หรือกด <strong style={{ color: 'var(--text)' }}>เต็มจอ</strong></>}
+            : <>มือถือ: กด <strong style={{ color: 'var(--text)' }}>เต็มจอ</strong> จะ swipe ซ้าย/ขวา ได้สะดวกกว่า · หรือใช้ลูกศร <strong style={{ color: 'var(--text)' }}>‹ ›</strong> มุมล่างของสไลด์</>}
         </p>
         <button onClick={toggleDone} style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
