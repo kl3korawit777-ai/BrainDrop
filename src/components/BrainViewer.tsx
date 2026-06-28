@@ -32,7 +32,7 @@ const BRAIN_PARTS = [
   },
   {
     id: 'cerebellum', name: 'Cerebellum', thai: 'สมองน้อย',
-    color: '#B49AD1', pos: [-1.0, -0.3, 0.3],
+    color: '#B49AD1', pos: [1.0, -0.3, 0.3],
     functions: ['ประสานการเคลื่อนไหว', 'การรักษาสมดุล', 'การควบคุมอารมณ์ · ความตั้งใจ'],
   },
   {
