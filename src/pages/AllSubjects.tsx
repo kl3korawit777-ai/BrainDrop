@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Search, X, ChevronDown, Menu, Eraser } from 'lucide-react'
 import type { ContentItem } from '../data/content'
 import { coverFor, getTagStyle } from '../data/content'
+import { useTypewriter, SEARCH_TYPEWRITER_WORDS } from '../components/TypewriterPlaceholder'
 import { useStore } from '../store/useStore'
 
 interface Props {
@@ -19,6 +20,7 @@ export default function AllSubjects({ onOpenItem }: Props) {
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [openSubject, setOpenSubject] = useState<string | null>(null)
   const [openCategory, setOpenCategory] = useState<Set<string>>(() => new Set())
+  const typedPlaceholder = useTypewriter({ words: SEARCH_TYPEWRITER_WORDS })
 
   // ─── tree: หมวดหมู่ → วิชา → tags ───
   const tree = useMemo(() => {
@@ -98,7 +100,7 @@ export default function AllSubjects({ onOpenItem }: Props) {
         </button>
         <div style={{ position: 'relative', flex: 1, maxWidth: 560 }}>
           <Search size={15} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-          <input type="search" placeholder="ค้นหาวิชา, หัวข้อ, หรือ tag..."
+          <input type="search" placeholder={typedPlaceholder}
             value={query} onChange={e => setQuery(e.target.value)}
             style={{ paddingLeft: 38, paddingRight: query ? 36 : 16 }} />
           {query && (

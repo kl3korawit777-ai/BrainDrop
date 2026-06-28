@@ -1,5 +1,16 @@
 import { useEffect, useState } from 'react'
 
+/** ตัวอย่างคำที่ใช้กับ typewriter ในช่องค้นหา — ใช้ร่วมระหว่างหน้า Home และ AllSubjects */
+export const SEARCH_TYPEWRITER_WORDS = [
+  'สรีรวิทยา',
+  'พันธุศาสตร์',
+  'ตรีโกณมิติ',
+  'กฎของนิวตัน',
+  'ไฟฟ้าเคมี',
+  'ตับ · ไต · หัวใจ',
+  '#midterm',
+]
+
 interface Props {
   words: string[]
   prefix?: string

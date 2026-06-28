@@ -3,6 +3,7 @@ import { LayoutGrid, BookOpen, Moon, Sun, X, ChevronsLeft, ChevronsRight, Brain 
 import { useStore } from '../store/useStore'
 import Logo from './Logo'
 import InboxButton from './InboxButton'
+import MyWebsitesButton from './MyWebsitesButton'
 
 interface Props {
   currentView: string
@@ -120,8 +121,9 @@ export default function Sidebar({ currentView, onNavigate }: Props) {
           })}
         </nav>
 
-        {/* Inbox + Dark mode */}
+        {/* My websites + Inbox + Dark mode */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <MyWebsitesButton collapsed={collapsed} />
         <InboxButton collapsed={collapsed} />
         <button onClick={toggleTheme} aria-label="สลับ dark/light mode"
           title={collapsed ? (theme === 'light' ? 'Dark mode' : 'Light mode') : undefined}

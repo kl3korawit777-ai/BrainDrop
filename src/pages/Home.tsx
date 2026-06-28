@@ -6,24 +6,14 @@ import ContentCard from '../components/ContentCard'
 import SlidesViewer from '../components/SlidesViewer'
 import SubjectCover from '../components/SubjectCover'
 import SocialCards, { type CardItem } from '@/components/ui/card-fan-carousel'
-import { useTypewriter } from '../components/TypewriterPlaceholder'
+import { useTypewriter, SEARCH_TYPEWRITER_WORDS } from '../components/TypewriterPlaceholder'
 import { useStore } from '../store/useStore'
-
-const TYPEWRITER_WORDS = [
-  'สรีรวิทยา',
-  'พันธุศาสตร์',
-  'ตรีโกณมิติ',
-  'กฎของนิวตัน',
-  'ไฟฟ้าเคมี',
-  'ตับ · ไต · หัวใจ',
-  '#midterm',
-]
 
 export default function Home() {
   const { searchQuery, setSearchQuery, activeTags, toggleTag, activeSubject, setActiveSubject, setSidebarOpen, content, contentLoading, subjectMeta } = useStore()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
-  const typedPlaceholder = useTypewriter({ words: TYPEWRITER_WORDS, prefix: 'ลองค้นหา ' })
+  const typedPlaceholder = useTypewriter({ words: SEARCH_TYPEWRITER_WORDS })
 
   const ALL_TAGS = useMemo(() => [...new Set(content.flatMap(c => c.tags))].sort(), [content])
   const selectedItem = content.find(c => c.id === selectedId)
