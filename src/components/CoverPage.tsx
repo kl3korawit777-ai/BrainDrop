@@ -51,18 +51,6 @@ export default function CoverPage({ onEnter }: Props) {
           <Logo size={104} withText />
         </motion.div>
 
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.4 }}
-          style={{
-            color: 'var(--text-muted)', fontSize: 15.5, textAlign: 'center',
-            maxWidth: 380, lineHeight: 1.65, letterSpacing: '0.005em',
-          }}
-        >
-          สรุปรายวิชา อ่านง่าย เข้าใจไว — รวมไว้ในที่เดียว
-        </motion.p>
-
         <motion.button
           onClick={onEnter}
           initial={{ opacity: 0, y: 12 }}

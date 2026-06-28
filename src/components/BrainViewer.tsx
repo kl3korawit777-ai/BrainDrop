@@ -12,7 +12,7 @@ const MODEL_URL = '/Brain_Model_(Right)_-_General_anatomy/Brain_Model_(Right)_-_
 const BRAIN_PARTS = [
   {
     id: 'frontal', name: 'Frontal Lobe', thai: 'สมองส่วนหน้า',
-    color: '#E68C7E', pos: [0.9, 1.2, 0.4],
+    color: '#E68C7E', pos: [-1.1, 0.7, -0.5],
     functions: ['บุคลิกภาพ · ทักษะทางสังคม', 'การตัดสินใจ · การให้เหตุผล', 'การควบคุมอารมณ์', 'การเคลื่อนไหว · การพูด'],
   },
   {
@@ -22,7 +22,7 @@ const BRAIN_PARTS = [
   },
   {
     id: 'occipital', name: 'Occipital Lobe', thai: 'สมองส่วนหลัง',
-    color: '#A5BF8A', pos: [-1.1, 0.7, -0.5],
+    color: '#A5BF8A', pos: [0.9, 1.2, 0.4],
     functions: ['การมองเห็น · การแยกแยะสี', 'การรับรู้รูปทรง'],
   },
   {
