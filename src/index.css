@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Force r3f canvas to fill its parent — fallback if ResizeObserver doesn't fire */
+.r3f-fill > div > canvas,
+.r3f-fill canvas { width: 100% !important; height: 100% !important; display: block; }
+
 /* ทำให้ Tailwind `dark:` ผูกกับ [data-theme="dark"] ของแอป (แทน prefers-color-scheme เริ่มต้น)
    เพื่อให้คอมโพเนนต์ที่ใช้ dark: เช่น card-fan-carousel ตามปุ่มสลับธีมของเรา */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));

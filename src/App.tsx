@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import AllSubjects from './pages/AllSubjects'
 import SlidesViewer from './components/SlidesViewer'
 import CoverPage from './components/CoverPage'
+import BrainViewer from './components/BrainViewer'
 import { useStore } from './store/useStore'
 
 const Admin = lazy(() => import('./pages/Admin'))
@@ -71,6 +72,7 @@ function PublicSite() {
           {(() => {
             const openItem = openItemId ? content.find(c => c.id === openItemId) : null
             if (openItem) return <SlidesViewer item={openItem} onBack={() => setOpenItemId(null)} />
+            if (view === 'brain') return <BrainViewer onBack={() => setView('home')} />
             if (view === 'subjects') return <AllSubjects onOpenItem={setOpenItemId} />
             return (
               <AnimatePresence mode="wait">

@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { LayoutGrid, BookOpen, Moon, Sun, X, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { LayoutGrid, BookOpen, Moon, Sun, X, ChevronsLeft, ChevronsRight, Brain } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import Logo from './Logo'
+import InboxButton from './InboxButton'
 
 interface Props {
   currentView: string
@@ -11,6 +12,7 @@ interface Props {
 const navItems = [
   { id: 'home',     label: 'หน้าหลัก',    Icon: LayoutGrid },
   { id: 'subjects', label: 'วิชาทั้งหมด', Icon: BookOpen },
+  { id: 'brain',    label: 'สมอง 3 มิติ', Icon: Brain },
 ]
 
 export default function Sidebar({ currentView, onNavigate }: Props) {
@@ -118,7 +120,9 @@ export default function Sidebar({ currentView, onNavigate }: Props) {
           })}
         </nav>
 
-        {/* Dark mode toggle */}
+        {/* Inbox + Dark mode */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <InboxButton collapsed={collapsed} />
         <button onClick={toggleTheme} aria-label="สลับ dark/light mode"
           title={collapsed ? (theme === 'light' ? 'Dark mode' : 'Light mode') : undefined}
           style={{
@@ -137,6 +141,7 @@ export default function Sidebar({ currentView, onNavigate }: Props) {
           {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
           {!collapsed && (theme === 'light' ? 'Dark mode' : 'Light mode')}
         </button>
+        </div>
       </div>
     )
   }
