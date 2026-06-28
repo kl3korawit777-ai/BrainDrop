@@ -25,6 +25,8 @@ function fromRow(r: Record<string, unknown>): ContentItem {
     tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
     slidesEmbedUrl: String(r.slides_embed_url ?? ''),
     driveUrl: r.drive_url ? String(r.drive_url) : undefined,
+    pdfUrl: r.pdf_url ? String(r.pdf_url) : undefined,
+    coverUrl: r.cover_url ? String(r.cover_url) : undefined,
     slideCount: Number(r.slide_count ?? 0),
     updatedAt: String(r.updated_at ?? '').slice(0, 10),
   }
@@ -39,6 +41,8 @@ export function toRow(item: ContentItem) {
     tags: item.tags,
     slides_embed_url: toSlidesEmbedUrl(item.slidesEmbedUrl),
     drive_url: item.driveUrl ?? null,
+    pdf_url: item.pdfUrl ?? null,
+    cover_url: item.coverUrl ?? null,
     slide_count: item.slideCount,
     updated_at: item.updatedAt || new Date().toISOString().slice(0, 10),
   }
@@ -83,5 +87,58 @@ export async function saveContent(item: ContentItem): Promise<void> {
 export async function deleteContent(id: string): Promise<void> {
   const sb = await client()
   const { error } = await sb.from(TABLE).delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+/* ── subject_meta — รูปการ์ดวิชา + หมวดหมู่ + ลำดับ ──────────────────── */
+
+export interface SubjectMetaRow {
+  name: string
+  coverUrl?: string
+  category?: string
+  sortOrder: number
+}
+
+const META_TABLE = 'subject_meta'
+
+function metaFromRow(r: Record<string, unknown>): SubjectMetaRow {
+  return {
+    name: String(r.name ?? ''),
+    coverUrl: r.cover_url ? String(r.cover_url) : undefined,
+    category: r.category ? String(r.category) : undefined,
+    sortOrder: Number(r.sort_order ?? 0),
+  }
+}
+
+/** ดึง subject_meta ทั้งหมด — public read */
+export async function fetchSubjectMeta(): Promise<SubjectMetaRow[]> {
+  if (!isSupabaseConfigured) return []
+  try {
+    const res = await fetch(
+      `${URL}/rest/v1/${META_TABLE}?select=*&order=sort_order.asc`,
+      { headers: { apikey: ANON!, Authorization: `Bearer ${ANON}` } },
+    )
+    if (!res.ok) return []
+    const rows = (await res.json()) as Record<string, unknown>[]
+    return rows.map(metaFromRow)
+  } catch {
+    return []
+  }
+}
+
+export async function saveSubjectMeta(m: SubjectMetaRow): Promise<void> {
+  const sb = await client()
+  const { error } = await sb.from(META_TABLE).upsert({
+    name: m.name,
+    cover_url: m.coverUrl ?? null,
+    category: m.category ?? null,
+    sort_order: m.sortOrder,
+  })
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteSubjectMeta(name: string): Promise<void> {
+  const sb = await client()
+  const { error } = await sb.from(META_TABLE).delete().eq('name', name)
   if (error) throw new Error(error.message)
 }

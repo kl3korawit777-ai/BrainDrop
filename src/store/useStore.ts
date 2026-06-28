@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { ContentItem } from '../data/content'
-import { fetchContent } from '../lib/contentApi'
+import { fetchContent, fetchSubjectMeta, type SubjectMetaRow } from '../lib/contentApi'
 
 interface Store {
   theme: 'light' | 'dark'
@@ -15,10 +15,19 @@ interface Store {
   setReadProgress: (id: string, page: number) => void
   sidebarOpen: boolean
   setSidebarOpen: (v: boolean) => void
+  // sidebar desktop ย่อพับเป็นไอคอน
+  sidebarCollapsed: boolean
+  toggleSidebarCollapsed: () => void
+  // หน้าปก/intro — false = แสดงหน้าปก, true = เข้าเว็บแล้ว
+  entered: boolean
+  setEntered: (v: boolean) => void
   // content (shared by public site + admin)
   content: ContentItem[]
   contentLoading: boolean
   loadContent: () => Promise<void>
+  // subject meta (รูปการ์ดวิชา + หมวดหมู่ + ลำดับ)
+  subjectMeta: SubjectMetaRow[]
+  loadSubjectMeta: () => Promise<void>
 }
 
 export const useStore = create<Store>((set, get) => ({
@@ -42,6 +51,10 @@ export const useStore = create<Store>((set, get) => ({
     set(s => ({ readProgress: { ...s.readProgress, [id]: page } })),
   sidebarOpen: false,
   setSidebarOpen: (v) => set({ sidebarOpen: v }),
+  sidebarCollapsed: false,
+  toggleSidebarCollapsed: () => set(s => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+  entered: false,
+  setEntered: (v) => set({ entered: v }),
 
   content: [],
   contentLoading: true,
@@ -49,5 +62,11 @@ export const useStore = create<Store>((set, get) => ({
     set({ contentLoading: true })
     const items = await fetchContent()
     set({ content: items, contentLoading: false })
+  },
+
+  subjectMeta: [],
+  loadSubjectMeta: async () => {
+    const rows = await fetchSubjectMeta()
+    set({ subjectMeta: rows })
   },
 }))

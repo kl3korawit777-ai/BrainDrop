@@ -4,7 +4,7 @@ import {
   Book, FlaskConical, Globe, Music, Code,
 } from 'lucide-react'
 import type { ContentItem } from '../data/content'
-import { getTagStyle, SUBJECT_CONFIG } from '../data/content'
+import { getTagStyle, SUBJECT_CONFIG, coverFor } from '../data/content'
 import { useStore } from '../store/useStore'
 
 // Map iconType string → Lucide component
@@ -67,14 +67,21 @@ export default function ContentCard({ item, index, onClick }: Props) {
         el.style.borderColor = 'var(--border)'
       }}
     >
-      {/* Thumbnail */}
+      {/* Thumbnail — รูปปกถ้ามี ไม่งั้น gradient + ไอคอน */}
       <div style={{
         height: 92,
         background: `linear-gradient(135deg, ${gradFrom} 0%, ${gradTo} 100%)`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        position: 'relative',
+        position: 'relative', overflow: 'hidden',
       }}>
-        <Icon size={34} color={meta.iconColor} strokeWidth={1.5} />
+        {(() => {
+          const cover = coverFor(item)
+          return cover ? (
+            <img src={cover} alt={item.title} loading="lazy" referrerPolicy="no-referrer" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <Icon size={34} color={meta.iconColor} strokeWidth={1.5} />
+          )
+        })()}
         {pct === 100 && (
           <div style={{
             position: 'absolute', top: 8, right: 8,

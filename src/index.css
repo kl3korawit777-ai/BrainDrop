@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* ทำให้ Tailwind `dark:` ผูกกับ [data-theme="dark"] ของแอป (แทน prefers-color-scheme เริ่มต้น)
+   เพื่อให้คอมโพเนนต์ที่ใช้ dark: เช่น card-fan-carousel ตามปุ่มสลับธีมของเรา */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   /* ── Logo-matched palette: Blue #3B82F6 → Indigo #4F46E5 ── */
   --bg: #F8F7FF;

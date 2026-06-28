@@ -7,6 +7,9 @@
     "types": ["vite/client"],
     "skipLibCheck": true,
 
+    /* Path alias (paths ทำงานได้โดยไม่ต้องมี baseUrl ภายใต้ moduleResolution: bundler) */
+    "paths": { "@/*": ["./src/*"] },
+
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

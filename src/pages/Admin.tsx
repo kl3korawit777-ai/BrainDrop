@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent, ReactNode, CSSProperties } from 'react'
 import { motion } from 'framer-motion'
-import { LogOut, Plus, Pencil, Trash2, ArrowLeft, Save, X, AlertCircle } from 'lucide-react'
+import { LogOut, Plus, Pencil, Trash2, ArrowLeft, Save, X, AlertCircle, Image as ImageIcon, FileText, ArrowUp, ArrowDown } from 'lucide-react'
 import Logo from '../components/Logo'
 import { useAuth } from '../lib/useAuth'
 import { useStore } from '../store/useStore'
-import { saveContent, deleteContent } from '../lib/contentApi'
+import {
+  saveContent, deleteContent,
+  saveSubjectMeta, deleteSubjectMeta, type SubjectMetaRow,
+} from '../lib/contentApi'
 import { SUBJECT_CONFIG, getTagStyle, type ContentItem } from '../data/content'
 
 const EMPTY: ContentItem = {
@@ -16,15 +19,22 @@ const EMPTY: ContentItem = {
 
 export default function Admin() {
   const { session, loading, signIn, signOut, configured } = useAuth()
-  const { content, loadContent } = useStore()
+  const { content, loadContent, subjectMeta, loadSubjectMeta } = useStore()
 
-  useEffect(() => { loadContent() }, [])
+  useEffect(() => { loadContent(); loadSubjectMeta() }, [])
 
   if (!configured) return <NotConfigured />
   if (loading) return <Centered>กำลังโหลด...</Centered>
   if (!session) return <Login onSignIn={signIn} />
 
-  return <Dashboard email={session.user.email ?? ''} content={content} onSignOut={signOut} onChanged={loadContent} />
+  return <Dashboard
+    email={session.user.email ?? ''}
+    content={content}
+    subjectMeta={subjectMeta}
+    onSignOut={signOut}
+    onContentChanged={loadContent}
+    onMetaChanged={loadSubjectMeta}
+  />
 }
 
 /* ───────────────────────── Layout helpers ───────────────────────── */
@@ -116,32 +126,65 @@ function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promise<void>
 
 /* ───────────────────────── Dashboard ───────────────────────── */
 
-function Dashboard({ email, content, onSignOut, onChanged }: {
+function Dashboard({ email, content, subjectMeta, onSignOut, onContentChanged, onMetaChanged }: {
   email: string
   content: ContentItem[]
+  subjectMeta: SubjectMetaRow[]
   onSignOut: () => void
-  onChanged: () => Promise<void>
+  onContentChanged: () => Promise<void>
+  onMetaChanged: () => Promise<void>
 }) {
+  const [tab, setTab] = useState<'summaries' | 'subjects'>('summaries')
   const [editing, setEditing] = useState<ContentItem | null>(null)
+  const [editingMeta, setEditingMeta] = useState<SubjectMetaRow | null>(null)
 
   if (editing) {
     return <EditForm
       item={editing}
       onCancel={() => setEditing(null)}
-      onSaved={async () => { await onChanged(); setEditing(null) }}
+      onSaved={async () => { await onContentChanged(); setEditing(null) }}
+    />
+  }
+  if (editingMeta) {
+    return <EditMetaForm
+      item={editingMeta}
+      onCancel={() => setEditingMeta(null)}
+      onSaved={async () => { await onMetaChanged(); setEditingMeta(null) }}
     />
   }
 
   async function remove(item: ContentItem) {
     if (!confirm(`ลบ "${item.title}" ?`)) return
-    try { await deleteContent(item.id); await onChanged() }
+    try { await deleteContent(item.id); await onContentChanged() }
     catch (e) { alert(e instanceof Error ? e.message : 'ลบไม่สำเร็จ') }
   }
 
+  async function removeMeta(name: string) {
+    if (!confirm(`ลบหมวด/รูปวิชา "${name}" ? (ตัวสรุปจะยังอยู่)`)) return
+    try { await deleteSubjectMeta(name); await onMetaChanged() }
+    catch (e) { alert(e instanceof Error ? e.message : 'ลบไม่สำเร็จ') }
+  }
+
+  async function reorder(name: string, dir: -1 | 1) {
+    const sorted = [...subjectMeta].sort((a, b) => a.sortOrder - b.sortOrder)
+    const idx = sorted.findIndex(m => m.name === name)
+    const swap = idx + dir
+    if (idx < 0 || swap < 0 || swap >= sorted.length) return
+    const a = sorted[idx], b = sorted[swap]
+    try {
+      await saveSubjectMeta({ ...a, sortOrder: b.sortOrder })
+      await saveSubjectMeta({ ...b, sortOrder: a.sortOrder })
+      await onMetaChanged()
+    } catch (e) { alert(e instanceof Error ? e.message : 'จัดลำดับไม่สำเร็จ') }
+  }
+
+  // วิชาในระบบ = จาก content + จาก subjectMeta
+  const allSubjectNames = [...new Set([...content.map(c => c.subject), ...subjectMeta.map(m => m.name)])]
+  const metaByName = new Map(subjectMeta.map(m => [m.name, m]))
+
   return (
     <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.5rem 1.25rem' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Logo size={28} />
           <div>
@@ -159,48 +202,221 @@ function Dashboard({ email, content, onSignOut, onChanged }: {
         </div>
       </div>
 
-      {/* Add button */}
-      <button onClick={() => setEditing({ ...EMPTY })} style={{
-        display: 'flex', alignItems: 'center', gap: 8, width: '100%', justifyContent: 'center',
-        padding: '12px', borderRadius: 'var(--radius)', border: '1.5px dashed var(--accent)',
-        background: 'var(--accent-light)', color: 'var(--accent)', fontWeight: 600,
-        fontSize: 'var(--text-base)', fontFamily: 'var(--font)', cursor: 'pointer', marginBottom: 20,
-      }}>
-        <Plus size={18} /> เพิ่มสรุปใหม่
-      </button>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid var(--border)' }}>
+        {([
+          { id: 'summaries', label: 'สรุป', Icon: FileText },
+          { id: 'subjects', label: 'หมวดหมู่/วิชา', Icon: ImageIcon },
+        ] as const).map(({ id, label, Icon }) => {
+          const active = tab === id
+          return (
+            <button key={id} onClick={() => setTab(id)} style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '10px 16px', borderRadius: '8px 8px 0 0',
+              background: active ? 'var(--accent-light)' : 'transparent',
+              color: active ? 'var(--accent)' : 'var(--text-muted)',
+              border: 'none', borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent',
+              fontFamily: 'var(--font)', fontSize: 'var(--text-sm)', fontWeight: 600,
+              cursor: 'pointer', marginBottom: -1,
+            }}>
+              <Icon size={15} /> {label}
+            </button>
+          )
+        })}
+      </div>
 
-      {/* List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {content.length === 0 && (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0', fontSize: 'var(--text-sm)' }}>
-            ยังไม่มีเนื้อหา — กดปุ่มด้านบนเพื่อเพิ่ม
+      {tab === 'summaries' && (
+        <>
+          <button onClick={() => setEditing({ ...EMPTY })} style={{
+            display: 'flex', alignItems: 'center', gap: 8, width: '100%', justifyContent: 'center',
+            padding: '12px', borderRadius: 'var(--radius)', border: '1.5px dashed var(--accent)',
+            background: 'var(--accent-light)', color: 'var(--accent)', fontWeight: 600,
+            fontSize: 'var(--text-base)', fontFamily: 'var(--font)', cursor: 'pointer', marginBottom: 20,
+          }}>
+            <Plus size={18} /> เพิ่มสรุปใหม่
+          </button>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {content.length === 0 && (
+              <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0', fontSize: 'var(--text-sm)' }}>
+                ยังไม่มีเนื้อหา — กดปุ่มด้านบนเพื่อเพิ่ม
+              </p>
+            )}
+            {content.map(item => (
+              <div key={item.id} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)', padding: '12px 16px',
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.subject} · {item.slideCount} สไลด์</span>
+                    {item.tags.map(t => {
+                      const s = getTagStyle(t)
+                      return <span key={t} style={{ background: s.bg, color: s.color, fontSize: 10, padding: '1px 7px', borderRadius: 20, fontWeight: 600 }}>{t}</span>
+                    })}
+                  </div>
+                </div>
+                <button onClick={() => setEditing(item)} aria-label="แก้ไข" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}>
+                  <Pencil size={16} />
+                </button>
+                <button onClick={() => remove(item)} aria-label="ลบ" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: 6 }}>
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {tab === 'subjects' && (
+        <>
+          <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', marginBottom: 14, lineHeight: 1.6 }}>
+            ตั้ง <strong>รูปการ์ดวิชา</strong> ในหน้าแรก, <strong>หมวดหมู่ใหญ่</strong> (ใช้จัดกลุ่มใน sidebar "วิชาทั้งหมด") และ <strong>ลำดับ</strong>
+          </p>
+
+          <button
+            onClick={() => setEditingMeta({ name: '', coverUrl: '', category: '', sortOrder: (subjectMeta.length ? Math.max(...subjectMeta.map(m => m.sortOrder)) + 1 : 0) })}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%', justifyContent: 'center',
+              padding: '12px', borderRadius: 'var(--radius)', border: '1.5px dashed var(--accent)',
+              background: 'var(--accent-light)', color: 'var(--accent)', fontWeight: 600,
+              fontSize: 'var(--text-base)', fontFamily: 'var(--font)', cursor: 'pointer', marginBottom: 20,
+            }}>
+            <Plus size={18} /> เพิ่มหมวด/วิชาใหม่
+          </button>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {allSubjectNames.length === 0 && (
+              <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0', fontSize: 'var(--text-sm)' }}>
+                ยังไม่มีวิชา — เพิ่มสรุปก่อน หรือกดปุ่มด้านบนเพื่อตั้งวิชาล่วงหน้า
+              </p>
+            )}
+            {allSubjectNames
+              .map(n => metaByName.get(n) ?? ({ name: n, sortOrder: 9999 } as SubjectMetaRow))
+              .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'th'))
+              .map(meta => (
+                <div key={meta.name} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)', padding: '10px 12px',
+                }}>
+                  <div style={{
+                    width: 56, height: 42, borderRadius: 8, overflow: 'hidden', flexShrink: 0,
+                    background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {meta.coverUrl
+                      ? <img src={meta.coverUrl} alt={meta.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <ImageIcon size={16} style={{ color: 'var(--accent)' }} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 2 }}>{meta.name}</p>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                      หมวด: {meta.category || '—'} · ลำดับ {meta.sortOrder}
+                    </p>
+                  </div>
+                  <button onClick={() => reorder(meta.name, -1)} aria-label="เลื่อนขึ้น" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
+                    <ArrowUp size={15} />
+                  </button>
+                  <button onClick={() => reorder(meta.name, 1)} aria-label="เลื่อนลง" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
+                    <ArrowDown size={15} />
+                  </button>
+                  <button onClick={() => setEditingMeta({ ...meta, coverUrl: meta.coverUrl ?? '', category: meta.category ?? '' })} aria-label="แก้ไข" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}>
+                    <Pencil size={16} />
+                  </button>
+                  <button onClick={() => removeMeta(meta.name)} aria-label="ลบ" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: 6 }}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+/* ───────────────────────── Edit subject meta ───────────────────────── */
+
+function EditMetaForm({ item, onCancel, onSaved }: {
+  item: SubjectMetaRow
+  onCancel: () => void
+  onSaved: () => Promise<void>
+}) {
+  const [name, setName] = useState(item.name)
+  const [coverUrl, setCoverUrl] = useState(item.coverUrl ?? '')
+  const [category, setCategory] = useState(item.category ?? '')
+  const [sortOrder, setSortOrder] = useState(String(item.sortOrder))
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const isNew = !item.name
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (!name.trim()) { setError('ใส่ชื่อวิชา'); return }
+    setBusy(true)
+    try {
+      await saveSubjectMeta({
+        name: name.trim(),
+        coverUrl: coverUrl.trim() || undefined,
+        category: category.trim() || undefined,
+        sortOrder: Number(sortOrder) || 0,
+      })
+      await onSaved()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ')
+    } finally { setBusy(false) }
+  }
+
+  const labelStyle: CSSProperties = { fontSize: 'var(--text-sm)', fontWeight: 500, display: 'block', marginBottom: 6, marginTop: 16 }
+
+  return (
+    <div style={{ maxWidth: 600, margin: '0 auto', padding: '1.5rem 1.25rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--text-sm)' }}>
+          <X size={18} /> ยกเลิก
+        </button>
+        <h1 style={{ fontSize: 'var(--text-xl)', marginLeft: 'auto' }}>{isNew ? 'เพิ่มหมวด/วิชา' : 'แก้ไขหมวด/วิชา'}</h1>
+      </div>
+
+      <form onSubmit={submit} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '1.5rem' }}>
+        <label style={{ ...labelStyle, marginTop: 0 }}>ชื่อวิชา *</label>
+        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="เช่น ชีววิทยา" disabled={!isNew} required />
+        {!isNew && (
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-subtle)', marginTop: 4 }}>
+            แก้ชื่อวิชาไม่ได้ — ถ้าต้องการเปลี่ยน ให้ลบแล้วเพิ่มใหม่
           </p>
         )}
-        {content.map(item => (
-          <div key={item.id} style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)', padding: '12px 16px',
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.subject} · {item.slideCount} สไลด์</span>
-                {item.tags.map(t => {
-                  const s = getTagStyle(t)
-                  return <span key={t} style={{ background: s.bg, color: s.color, fontSize: 10, padding: '1px 7px', borderRadius: 20, fontWeight: 600 }}>{t}</span>
-                })}
-              </div>
-            </div>
-            <button onClick={() => setEditing(item)} aria-label="แก้ไข" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6 }}>
-              <Pencil size={16} />
-            </button>
-            <button onClick={() => remove(item)} aria-label="ลบ" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: 6 }}>
-              <Trash2 size={16} />
-            </button>
-          </div>
-        ))}
-      </div>
+
+        <label style={labelStyle}>หมวดหมู่ใหญ่ (เช่น "วิทยาศาสตร์", "ภาษา")</label>
+        <input type="text" value={category} onChange={e => setCategory(e.target.value)} placeholder="ปล่อยว่าง = ไม่จัดหมวด" />
+
+        <label style={labelStyle}>รูปการ์ดวิชา (URL — ใช้ในหน้าแรก fan)</label>
+        <input type="text" value={coverUrl} onChange={e => setCoverUrl(e.target.value)} placeholder="https://...jpg — ปล่อยว่างจะใช้รูปสไลด์อัตโนมัติ" />
+        {coverUrl && (
+          <img src={coverUrl} alt="preview" loading="lazy" style={{ marginTop: 8, width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
+        )}
+
+        <label style={labelStyle}>ลำดับ (เลขน้อย = แสดงก่อน)</label>
+        <input type="text" inputMode="numeric" value={sortOrder} onChange={e => setSortOrder(e.target.value.replace(/\D/g, ''))} placeholder="0" />
+
+        {error && (
+          <p style={{ color: '#EF4444', fontSize: 'var(--text-sm)', marginTop: 16, display: 'flex', gap: 6, alignItems: 'center' }}>
+            <AlertCircle size={15} /> {error}
+          </p>
+        )}
+
+        <button type="submit" disabled={busy} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          width: '100%', padding: '12px', borderRadius: 'var(--radius)', border: 'none',
+          background: 'var(--accent)', color: 'white', fontWeight: 600, fontSize: 'var(--text-base)',
+          fontFamily: 'var(--font)', cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1, marginTop: 24,
+        }}>
+          <Save size={17} /> {busy ? 'กำลังบันทึก...' : 'บันทึก'}
+        </button>
+      </form>
     </div>
   )
 }
@@ -214,6 +430,8 @@ function EditForm({ item, onCancel, onSaved }: {
 }) {
   const [form, setForm] = useState<ContentItem>(item)
   const [tagInput, setTagInput] = useState(item.tags.join(' '))
+  // เก็บ slideCount เป็น string เพื่อให้ลบจนว่างได้ (bug fix: เดิม "0" ค้างทำให้พิมพ์ต่อไม่ได้)
+  const [slideCountInput, setSlideCountInput] = useState(item.slideCount ? String(item.slideCount) : '')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const isNew = !item.id
@@ -232,7 +450,7 @@ function EditForm({ item, onCancel, onSaved }: {
 
     setBusy(true)
     try {
-      await saveContent({ ...form, id, tags, updatedAt: new Date().toISOString().slice(0, 10) })
+      await saveContent({ ...form, id, tags, slideCount: Number(slideCountInput) || 0, updatedAt: new Date().toISOString().slice(0, 10) })
       await onSaved()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ')
@@ -269,8 +487,17 @@ function EditForm({ item, onCancel, onSaved }: {
         <label style={labelStyle}>ลิงก์ดาวน์โหลด PDF (ไม่บังคับ)</label>
         <input type="text" value={form.driveUrl ?? ''} onChange={e => set('driveUrl', e.target.value)} placeholder="https://drive.google.com/..." />
 
+        <label style={labelStyle}>ลิงก์ Google Drive — สไลด์เดี่ยว/PDF หน้าเดียว (ไม่บังคับ)</label>
+        <input type="text" value={form.pdfUrl ?? ''} onChange={e => set('pdfUrl', e.target.value)} placeholder="https://drive.google.com/file/d/.../view — รูปหรือสไลด์หน้าเดียว" />
+
+        <label style={labelStyle}>รูปปก (URL รูปภาพ — ปล่อยว่างเพื่อดึงจากสไลด์อัตโนมัติ)</label>
+        <input type="text" value={form.coverUrl ?? ''} onChange={e => set('coverUrl', e.target.value)} placeholder="ปล่อยว่าง = ใช้รูปสไลด์แรกอัตโนมัติ" />
+        {form.coverUrl && (
+          <img src={form.coverUrl} alt="ตัวอย่างรูปปก" loading="lazy" style={{ marginTop: 8, width: '100%', maxHeight: 140, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
+        )}
+
         <label style={labelStyle}>จำนวนสไลด์</label>
-        <input type="text" inputMode="numeric" value={String(form.slideCount)} onChange={e => set('slideCount', Number(e.target.value.replace(/\D/g, '')) || 0)} placeholder="22" />
+        <input type="text" inputMode="numeric" value={slideCountInput} onChange={e => setSlideCountInput(e.target.value.replace(/\D/g, ''))} placeholder="22" />
 
         {error && (
           <p style={{ color: '#EF4444', fontSize: 'var(--text-sm)', marginTop: 16, display: 'flex', gap: 6, alignItems: 'center' }}>

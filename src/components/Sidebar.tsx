@@ -1,8 +1,6 @@
-import { useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LayoutGrid, BookOpen, Tag, Search, Moon, Sun, X } from 'lucide-react'
+import { LayoutGrid, BookOpen, Moon, Sun, X, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { useStore } from '../store/useStore'
-import { SUBJECT_CONFIG } from '../data/content'
 import Logo from './Logo'
 
 interface Props {
@@ -13,121 +11,149 @@ interface Props {
 const navItems = [
   { id: 'home',     label: 'หน้าหลัก',    Icon: LayoutGrid },
   { id: 'subjects', label: 'วิชาทั้งหมด', Icon: BookOpen },
-  { id: 'tags',     label: 'Tags',         Icon: Tag },
-  { id: 'search',   label: 'ค้นหา',        Icon: Search },
 ]
 
 export default function Sidebar({ currentView, onNavigate }: Props) {
-  const { theme, toggleTheme, activeSubject, setActiveSubject, sidebarOpen, setSidebarOpen, content } = useStore()
+  const {
+    theme, toggleTheme, setActiveSubject, setEntered,
+    sidebarOpen, setSidebarOpen,
+    sidebarCollapsed, toggleSidebarCollapsed,
+  } = useStore()
 
-  // วิชา = config ที่ตั้งไว้ + วิชาใหม่ที่มีใน content (จาก admin)
-  const SUBJECTS = useMemo(() => {
-    const fromConfig = Object.keys(SUBJECT_CONFIG)
-    const fromContent = content.map(c => c.subject)
-    return ['ทั้งหมด', ...new Set([...fromConfig, ...fromContent])]
-  }, [content])
-
-  const inner = (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '1.25rem 0.875rem' }}>
-
-      {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1.75rem', padding: '0 0.375rem' }}>
-        <Logo size={30} withText />
-        {sidebarOpen && (
+  /** สำหรับ desktop เท่านั้น — ใช้ตอน inner ของ aside ตัวบน */
+  function buildInner(collapsed: boolean) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: collapsed ? '1.25rem 0.5rem' : '1.25rem 0.875rem' }}>
+        {/* Header: Logo + ปุ่มย่อ/ขยาย */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          marginBottom: '1.75rem', padding: collapsed ? 0 : '0 0.375rem',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+        }}>
+          {!collapsed && (
+            <button
+              onClick={() => { setActiveSubject('ทั้งหมด'); setEntered(false); setSidebarOpen(false) }}
+              aria-label="กลับหน้าแรก"
+              style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flex: 1 }}
+            >
+              <Logo size={30} withText />
+            </button>
+          )}
+          {collapsed && (
+            <button
+              onClick={() => { setActiveSubject('ทั้งหมด'); setEntered(false) }}
+              aria-label="กลับหน้าแรก"
+              style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              <Logo size={26} />
+            </button>
+          )}
+          {/* ปุ่มย่อ — desktop เท่านั้น */}
           <button
-            aria-label="ปิด sidebar"
-            onClick={() => setSidebarOpen(false)}
+            onClick={toggleSidebarCollapsed}
+            aria-label={collapsed ? 'ขยาย sidebar' : 'ย่อ sidebar'}
+            title={collapsed ? 'ขยาย' : 'ย่อ'}
             style={{
-              marginLeft: 'auto', background: 'none', border: 'none',
-              cursor: 'pointer', color: 'var(--text-muted)',
-              display: 'flex', padding: 4, borderRadius: 6,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', display: 'flex',
+              padding: 5, borderRadius: 6,
+              ...(collapsed ? { marginTop: 10 } : {}),
             }}
           >
-            <X size={16} />
+            {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
           </button>
-        )}
-      </div>
-
-      {/* Nav */}
-      <nav style={{ flex: 1 }}>
-        <p style={{
-          fontSize: 'var(--text-xs)', fontWeight: 'var(--fw-semibold)',
-          color: 'var(--text-subtle)', letterSpacing: '0.07em', textTransform: 'uppercase',
-          padding: '0 0.5rem', marginBottom: 6,
-        }}>
-          เมนู
-        </p>
-
-        {navItems.map(({ id, label, Icon }) => {
-          const active = currentView === id
-          return (
-            <button key={id} onClick={() => { onNavigate(id); setSidebarOpen(false) }} style={{
-              display: 'flex', alignItems: 'center', gap: 9, width: '100%',
-              padding: '7px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              marginBottom: 2,
-              fontSize: 'var(--text-sm)', fontWeight: active ? 'var(--fw-semibold)' : 'var(--fw-regular)',
-              fontFamily: 'var(--font)',
-              background: active ? 'var(--accent-light)' : 'transparent',
-              color: active ? 'var(--accent)' : 'var(--text-muted)',
-              transition: 'all 0.15s',
-            }}>
-              <Icon size={15} />
-              {label}
+          {/* ปุ่ม X — มือถือเท่านั้น */}
+          {sidebarOpen && !collapsed && (
+            <button
+              aria-label="ปิด sidebar"
+              onClick={() => setSidebarOpen(false)}
+              className="md:hidden"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: 4, borderRadius: 6 }}
+            >
+              <X size={16} />
             </button>
-          )
-        })}
-
-        {/* Subjects */}
-        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-          <p style={{
-            fontSize: 'var(--text-xs)', fontWeight: 'var(--fw-semibold)',
-            color: 'var(--text-subtle)', letterSpacing: '0.07em', textTransform: 'uppercase',
-            padding: '0 0.5rem', marginBottom: 6,
-          }}>
-            วิชา
-          </p>
-          {SUBJECTS.map(s => (
-            <button key={s} onClick={() => { setActiveSubject(s); onNavigate('home') }} style={{
-              display: 'block', width: '100%', textAlign: 'left',
-              padding: '6px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              fontSize: 'var(--text-sm)', fontFamily: 'var(--font)', marginBottom: 1,
-              fontWeight: activeSubject === s ? 'var(--fw-semibold)' : 'var(--fw-regular)',
-              background: activeSubject === s ? 'var(--accent-light)' : 'transparent',
-              color: activeSubject === s ? 'var(--accent)' : 'var(--text-muted)',
-              transition: 'all 0.15s',
-            }}>
-              {s}
-            </button>
-          ))}
+          )}
         </div>
-      </nav>
 
-      {/* Dark mode toggle */}
-      <button onClick={toggleTheme} aria-label="สลับ dark/light mode" style={{
-        display: 'flex', alignItems: 'center', gap: 9,
-        padding: '7px 10px', borderRadius: 8,
-        border: '1px solid var(--border-strong)',
-        background: 'var(--surface-hover)', cursor: 'pointer',
-        color: 'var(--text-muted)', fontFamily: 'var(--font)',
-        fontSize: 'var(--text-sm)', fontWeight: 'var(--fw-medium)',
-        width: '100%', transition: 'all 0.15s',
-      }}>
-        {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
-        {theme === 'light' ? 'Dark mode' : 'Light mode'}
-      </button>
-    </div>
-  )
+        {/* Nav */}
+        <nav style={{ flex: 1 }}>
+          {!collapsed && (
+            <p style={{
+              fontSize: 'var(--text-xs)', fontWeight: 'var(--fw-semibold)',
+              color: 'var(--text-subtle)', letterSpacing: '0.07em', textTransform: 'uppercase',
+              padding: '0 0.5rem', marginBottom: 6,
+            }}>
+              เมนู
+            </p>
+          )}
+
+          {navItems.map(({ id, label, Icon }) => {
+            const active = currentView === id
+            return (
+              <button key={id}
+                onClick={() => {
+                  if (id === 'home') setActiveSubject('ทั้งหมด')
+                  onNavigate(id); setSidebarOpen(false)
+                }}
+                title={collapsed ? label : undefined}
+                style={{
+                  display: 'flex', alignItems: 'center',
+                  gap: collapsed ? 0 : 9,
+                  justifyContent: collapsed ? 'center' : 'flex-start',
+                  width: '100%',
+                  padding: collapsed ? '10px 0' : '7px 10px',
+                  borderRadius: 8, border: 'none', cursor: 'pointer',
+                  marginBottom: 2,
+                  fontSize: 'var(--text-sm)', fontWeight: active ? 'var(--fw-semibold)' : 'var(--fw-regular)',
+                  fontFamily: 'var(--font)',
+                  background: active ? 'var(--accent-light)' : 'transparent',
+                  color: active ? 'var(--accent)' : 'var(--text-muted)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <Icon size={collapsed ? 18 : 15} />
+                {!collapsed && label}
+              </button>
+            )
+          })}
+        </nav>
+
+        {/* Dark mode toggle */}
+        <button onClick={toggleTheme} aria-label="สลับ dark/light mode"
+          title={collapsed ? (theme === 'light' ? 'Dark mode' : 'Light mode') : undefined}
+          style={{
+            display: 'flex', alignItems: 'center',
+            gap: collapsed ? 0 : 9,
+            justifyContent: 'center',
+            padding: collapsed ? '10px 0' : '7px 10px',
+            borderRadius: 8,
+            border: '1px solid var(--border-strong)',
+            background: 'var(--surface-hover)', cursor: 'pointer',
+            color: 'var(--text-muted)', fontFamily: 'var(--font)',
+            fontSize: 'var(--text-sm)', fontWeight: 'var(--fw-medium)',
+            width: '100%', transition: 'all 0.15s',
+          }}
+        >
+          {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+          {!collapsed && (theme === 'light' ? 'Dark mode' : 'Light mode')}
+        </button>
+      </div>
+    )
+  }
 
   return (
     <>
+      {/* Desktop sidebar — ปรับ width ตาม collapsed */}
       <aside style={{
-        width: 'var(--sidebar-w)', flexShrink: 0,
+        width: sidebarCollapsed ? 64 : 'var(--sidebar-w)', flexShrink: 0,
         background: 'var(--surface)', borderRight: '1px solid var(--border)',
         height: '100vh', position: 'sticky', top: 0,
+        transition: 'width 0.2s ease',
       }} className="hidden md:block">
-        {inner}
+        {buildInner(sidebarCollapsed)}
       </aside>
 
+      {/* Mobile overlay sidebar — ไม่ย่อ */}
       <AnimatePresence>
         {sidebarOpen && (
           <>
@@ -147,7 +173,7 @@ export default function Sidebar({ currentView, onNavigate }: Props) {
               }}
               className="md:hidden"
             >
-              {inner}
+              {buildInner(false)}
             </motion.aside>
           </>
         )}

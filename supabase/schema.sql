@@ -11,10 +11,38 @@ create table if not exists public.summaries (
   tags              text[] not null default '{}',
   slides_embed_url  text not null,
   drive_url         text,
+  cover_url         text,
+  pdf_url           text,
   slide_count       int  not null default 0,
   updated_at        date not null default current_date,
   created_at        timestamptz not null default now()
 );
+
+-- ถ้าตารางมีอยู่แล้ว (อัปเกรดภายหลัง) ให้เพิ่มคอลัมน์ใหม่:
+alter table public.summaries add column if not exists cover_url text;
+alter table public.summaries add column if not exists pdf_url   text;
+
+-- ─── ตารางหมวดหมู่/วิชา ──────────────────────────────────────────────
+-- จัดการรูปการ์ดวิชาในหน้าแรก + หมวดหมู่ใหญ่ + ลำดับ
+create table if not exists public.subject_meta (
+  name        text primary key,            -- ชื่อวิชา ตรงกับ summaries.subject
+  cover_url   text,                        -- รูปการ์ดในหน้าแรก fan
+  category    text,                        -- หมวดหมู่ใหญ่ (เช่น "วิทยาศาสตร์", "ภาษา")
+  sort_order  int  not null default 0,     -- ลำดับใน sidebar
+  created_at  timestamptz not null default now()
+);
+
+alter table public.subject_meta enable row level security;
+
+drop policy if exists "public read meta" on public.subject_meta;
+create policy "public read meta"
+  on public.subject_meta for select using (true);
+
+drop policy if exists "auth write meta" on public.subject_meta;
+create policy "auth write meta"
+  on public.subject_meta for all
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 -- เปิด Row Level Security
 alter table public.summaries enable row level security;

@@ -6,6 +6,7 @@ export interface ContentItem {
   slidesEmbedUrl: string
   driveUrl?: string
   pdfUrl?: string
+  coverUrl?: string
   slideCount: number
   updatedAt: string
 }
@@ -83,6 +84,21 @@ export function toSlidesOpenUrl(raw: string): string {
   return p.published
     ? `https://docs.google.com/presentation/d/e/${p.id}/pub?start=false&loop=false`
     : `https://docs.google.com/presentation/d/${p.id}/edit`
+}
+
+/** ดึง URL รูป thumbnail สไลด์แรกจาก Google Slides — ใช้เป็นรูปปกอัตโนมัติ
+ *  Drive thumbnail ใช้ได้เมื่อสไลด์แชร์ "ทุกคนที่มีลิงก์" / Published ใช้ /img1.png ตรง */
+export function getSlidesThumbnail(raw: string, size = 1000): string | null {
+  if (!raw || raw.includes('EXAMPLE_ID')) return null
+  const p = parseSlidesId(raw)
+  if (!p) return null
+  if (p.published) return `https://docs.google.com/presentation/d/e/${p.id}/img1.png`
+  return `https://drive.google.com/thumbnail?id=${p.id}&sz=w${size}`
+}
+
+/** รูปปกที่ใช้จริง — coverUrl ที่ผู้ใช้ตั้งเอง ก่อน, ไม่งั้นดึงจาก Slides */
+export function coverFor(item: { coverUrl?: string; slidesEmbedUrl: string }): string | null {
+  return item.coverUrl ?? getSlidesThumbnail(item.slidesEmbedUrl)
 }
 // ─── เนื้อหา — เพิ่ม item ใหม่ที่นี่ ──────────────────────────────────────────
 export const content: ContentItem[] = [
