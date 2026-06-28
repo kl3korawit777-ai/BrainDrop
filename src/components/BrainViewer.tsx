@@ -1,4 +1,4 @@
-import { Suspense, useState, useEffect, useRef } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Html, useGLTF, Center, useProgress } from '@react-three/drei'
 import { ArrowLeft, Pause, Play, Sparkles, MousePointerClick, X } from 'lucide-react'
@@ -81,6 +81,7 @@ function NumberedHotspot({
       </mesh>
       <Html
         center
+        occlude
         distanceFactor={7}
         zIndexRange={[40, 0]}
         style={{ pointerEvents: 'auto' }}
@@ -191,7 +192,6 @@ interface BrainViewerProps {
 export default function BrainViewer({ onBack }: BrainViewerProps) {
   const [autoRotate, setAutoRotate] = useState(false)
   const [selectedId, setSelectedId] = useState<PartId | null>(null)
-  const wrapperRef = useRef<HTMLDivElement>(null)
 
   const selected: BrainPart | null =
     BRAIN_PARTS.find(p => p.id === selectedId) ?? null
@@ -203,7 +203,6 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
 
   return (
     <div
-      ref={wrapperRef}
       className="aurora-bg aurora-grain"
       style={{
         position: 'relative',
@@ -541,7 +540,7 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
           camera={{ position: [4.2, 1.8, 5.4], fov: 42 }}
           dpr={[1, 1.5]}
           gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false, powerPreference: 'high-performance' }}
-          frameloop={autoRotate ? 'always' : 'demand'}
+          frameloop="always"
           style={{ width: '100%', height: '100%', display: 'block' }}
         >
           <Suspense fallback={<LoadingProgress />}>
