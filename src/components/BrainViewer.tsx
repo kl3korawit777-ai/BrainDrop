@@ -1,69 +1,150 @@
-import { Suspense, useState, useEffect } from 'react'
+import { Suspense, useState, useEffect, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Html, Environment, useGLTF, Center, Bounds } from '@react-three/drei'
-import { ArrowLeft, RotateCw, Pause, Play } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { ArrowLeft, Pause, Play, Sparkles } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import * as THREE from 'three'
 
 const MODEL_URL = '/Brain_Model_(Right)_-_General_anatomy/Brain_Model_(Right)_-_General_anatomy.gltf'
 
-/** ตำแหน่งของ annotation จะอยู่ใน "หน่วยสัมพัทธ์" หลังจาก Center+Bounds
- *  (สมองถูก fit ลงในกล่อง ~ -1..1) — ปรับค่าให้ลูกศรชี้ใกล้กับแต่ละ lobe */
+/** Warm aurora palette — โทนแสงธรรมชาติ (ไม่ neon ไม่ AI slop)
+ *  แต่ละสีถูก eyedrop จากภาพรุ่งอรุณ + เซรามิคโบราณ */
 const BRAIN_PARTS = [
-  { name: 'Frontal Lobe',  desc: 'การคิด / การตัดสินใจ',     color: '#F472B6', pos: [0.9,  1.2,  0.4] },
-  { name: 'Parietal Lobe', desc: 'รับความรู้สึก / ภาษา',     color: '#60A5FA', pos: [0.2,  1.6, -0.3] },
-  { name: 'Occipital Lobe',desc: 'การมองเห็น',                color: '#34D399', pos: [-1.1, 0.7, -0.5] },
-  { name: 'Temporal Lobe', desc: 'ความจำ / การได้ยิน',       color: '#FBBF24', pos: [0.6,  0.0,  1.0] },
-  { name: 'Cerebellum',    desc: 'การทรงตัว / เคลื่อนไหว',   color: '#A78BFA', pos: [-1.0,-0.3,  0.3] },
-  { name: 'Brain Stem',    desc: 'ระบบหายใจ / หัวใจ',        color: '#9CA3AF', pos: [-0.3,-1.0,  0.4] },
+  { id: 'frontal',    name: 'Frontal Lobe',   thai: 'สมองส่วนหน้า',  desc: 'การคิด · ตัดสินใจ',      color: '#E68C7E', pos: [0.9,  1.2,  0.4] },
+  { id: 'parietal',   name: 'Parietal Lobe',  thai: 'สมองส่วนกลาง',  desc: 'รับสัมผัส · ภาษา',       color: '#7BAFA3', pos: [0.2,  1.6, -0.3] },
+  { id: 'occipital',  name: 'Occipital Lobe', thai: 'สมองส่วนหลัง',  desc: 'การมองเห็น',              color: '#A5BF8A', pos: [-1.1, 0.7, -0.5] },
+  { id: 'temporal',   name: 'Temporal Lobe',  thai: 'สมองด้านข้าง',  desc: 'ความจำ · การได้ยิน',     color: '#E0A867', pos: [0.6,  0.0,  1.0] },
+  { id: 'cerebellum', name: 'Cerebellum',     thai: 'สมองน้อย',       desc: 'การทรงตัว · เคลื่อนไหว', color: '#B49AD1', pos: [-1.0,-0.3,  0.3] },
+  { id: 'stem',       name: 'Brain Stem',     thai: 'ก้านสมอง',       desc: 'หายใจ · หัวใจ',          color: '#A99685', pos: [-0.3,-1.0,  0.4] },
 ] as const
 
-function BrainAnnotation({ name, desc, color, position }: {
-  name: string; desc: string; color: string; position: [number, number, number]
+type PartId = typeof BRAIN_PARTS[number]['id']
+
+/** SVG arrow แทนเส้นตรงเฉยๆ — ตัวลูกศรเป็น chevron ปลายมน */
+function ArrowSVG({ color }: { color: string }) {
+  return (
+    <svg width="14" height="52" viewBox="0 0 14 52" style={{ display: 'block', overflow: 'visible' }} aria-hidden>
+      <defs>
+        <linearGradient id={`g-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0" />
+          <stop offset="35%" stopColor={color} stopOpacity="0.55" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.95" />
+        </linearGradient>
+      </defs>
+      {/* เส้นโค้งเล็กน้อย ไม่แข็งทื่อ */}
+      <path
+        d="M 7 0 Q 7 14, 7 38"
+        stroke={`url(#g-${color.replace('#','')})`}
+        strokeWidth="1.4"
+        fill="none"
+        strokeLinecap="round"
+      />
+      {/* หัวลูกศร chevron ปลายมน */}
+      <path
+        d="M 2 38 L 7 45 L 12 38"
+        stroke={color}
+        strokeWidth="1.6"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function BrainAnnotation({
+  name, thai, desc, color, position, focused, onHover, onLeave,
+}: {
+  name: string; thai: string; desc: string; color: string
+  position: [number, number, number]
+  focused: boolean
+  onHover: () => void; onLeave: () => void
 }) {
   return (
     <group position={position}>
-      {/* จุดจุดที่ส่วนของสมอง */}
+      {/* Halo สีนุ่มรอบจุด — additive blending ให้กลืนกับเนื้อสมอง */}
       <mesh>
-        <sphereGeometry args={[0.04, 16, 16]} />
+        <sphereGeometry args={[focused ? 0.22 : 0.16, 24, 24]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={focused ? 0.45 : 0.25}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+      {/* จุดศูนย์กลาง */}
+      <mesh>
+        <sphereGeometry args={[0.045, 16, 16]} />
         <meshBasicMaterial color={color} />
       </mesh>
-      {/* ป้ายลอย */}
+      {/* การ์ดข้อความ + ลูกศร */}
       <Html
-        position={[0, 0.3, 0]}
+        position={[0, 0.45, 0]}
         center
         distanceFactor={6}
-        zIndexRange={[20, 0]}
-        style={{ pointerEvents: 'none' }}
+        zIndexRange={[40, 0]}
+        style={{ pointerEvents: 'auto' }}
       >
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          transform: 'translate3d(0, -50%, 0)',
-        }}>
-          {/* เส้นชี้ */}
-          <div style={{
-            width: 1, height: 30,
-            background: `linear-gradient(to bottom, transparent, ${color})`,
-          }} />
-          {/* การ์ดข้อความ */}
-          <div style={{
-            background: 'rgba(255,255,255,0.92)',
-            backdropFilter: 'blur(10px)',
-            border: `1px solid ${color}55`,
-            borderTop: `3px solid ${color}`,
-            borderRadius: 10,
-            padding: '7px 11px',
-            boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
-            textAlign: 'center',
-            minWidth: 110,
-            marginBottom: 4,
-          }}>
-            <p style={{
-              fontSize: 12, fontWeight: 800, color: '#0F172A',
-              margin: 0, lineHeight: 1.15, letterSpacing: '-0.01em',
-            }}>{name}</p>
-            <p style={{
-              fontSize: 10.5, color: '#475569', margin: '2px 0 0', lineHeight: 1.2,
-            }}>{desc}</p>
+        <div
+          onMouseEnter={onHover}
+          onMouseLeave={onLeave}
+          style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            transform: 'translate3d(0, -100%, 0)',
+            cursor: 'help',
+          }}
+        >
+          {/* การ์ดข้อความ — glass อุ่น */}
+          <motion.div
+            animate={{
+              scale: focused ? 1.04 : 1,
+              y: focused ? -2 : 0,
+            }}
+            transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+            style={{
+              position: 'relative',
+              background: 'rgba(253, 246, 235, 0.94)',
+              backdropFilter: 'blur(14px) saturate(1.1)',
+              WebkitBackdropFilter: 'blur(14px) saturate(1.1)',
+              border: `1px solid ${color}33`,
+              borderRadius: 18,
+              padding: '8px 13px 9px',
+              boxShadow: focused
+                ? `0 14px 32px ${color}33, 0 4px 12px rgba(120, 80, 50, 0.10)`
+                : '0 8px 22px rgba(120, 80, 50, 0.10)',
+              textAlign: 'left',
+              minWidth: 132,
+              marginBottom: 0,
+              transition: 'box-shadow 250ms ease',
+            }}
+          >
+            {/* แถบสีบางๆ ด้านซ้าย แทน border-top เหลี่ยมๆ */}
+            <span style={{
+              position: 'absolute', left: 6, top: 8, bottom: 8, width: 2.5,
+              borderRadius: 999, background: color,
+              boxShadow: `0 0 6px ${color}88`,
+            }} />
+            <div style={{ paddingLeft: 10 }}>
+              <p style={{
+                fontSize: 11.5, fontWeight: 700, color: '#3A2618',
+                margin: 0, lineHeight: 1.15, letterSpacing: '-0.005em',
+                fontFamily: 'var(--font)',
+              }}>{name}</p>
+              <p style={{
+                fontSize: 9.5, color: '#7A5A45', margin: '1px 0 0',
+                lineHeight: 1.2, fontWeight: 500, letterSpacing: '0.01em',
+                fontFamily: 'var(--font)',
+              }}>{thai}</p>
+              <p style={{
+                fontSize: 9, color: '#9A7858', margin: '3px 0 0',
+                lineHeight: 1.25, fontFamily: 'var(--font)',
+              }}>{desc}</p>
+            </div>
+          </motion.div>
+          {/* ลูกศร SVG ปลายมน */}
+          <div style={{ marginTop: -2 }}>
+            <ArrowSVG color={color} />
           </div>
         </div>
       </Html>
@@ -71,8 +152,30 @@ function BrainAnnotation({ name, desc, color, position }: {
   )
 }
 
-function BrainModel() {
+/** ทาสีสมองให้เป็น warm coral แบบกายวิภาค — แทนสีเทาเริ่มต้นของ GLTF */
+function BrainModel({ tint }: { tint: string }) {
   const { scene } = useGLTF(MODEL_URL)
+  useEffect(() => {
+    scene.traverse((obj) => {
+      if (!(obj instanceof THREE.Mesh)) return
+      // ตั้งวัสดุใหม่: physical material คล้ายผิว / องค์ประกอบทางชีวภาพ
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(tint),
+        roughness: 0.62,
+        metalness: 0.02,
+        clearcoat: 0.35,
+        clearcoatRoughness: 0.45,
+        sheen: 0.55,
+        sheenColor: new THREE.Color('#FFD8C8'),
+        sheenRoughness: 0.6,
+        emissive: new THREE.Color('#3E1A14'),
+        emissiveIntensity: 0.08,
+      })
+      obj.material = mat
+      obj.castShadow = true
+      obj.receiveShadow = true
+    })
+  }, [scene, tint])
   return <primitive object={scene} />
 }
 
@@ -84,30 +187,48 @@ interface BrainViewerProps {
 
 export default function BrainViewer({ onBack }: BrainViewerProps) {
   const [autoRotate, setAutoRotate] = useState(false)
+  const [focusedId, setFocusedId] = useState<PartId | null>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
-  // r3f บางจังหวะ ResizeObserver ไม่ยิงตอน mount แรก — kick a resize ให้ canvas วัดขนาดถูก
+  // r3f ResizeObserver kick — กรณี mount แรกไม่วัดขนาด canvas
   useEffect(() => {
     const t = setTimeout(() => window.dispatchEvent(new Event('resize')), 50)
     return () => clearTimeout(t)
   }, [])
 
   return (
-    <div style={{
-      position: 'relative',
-      width: '100%', height: '100vh',
-      display: 'flex', flexDirection: 'column',
-      background: 'radial-gradient(ellipse at 50% 40%, #EEF2FF 0%, #F8FAFC 60%, #E2E8F0 100%)',
-      overflow: 'hidden',
-    }}>
-      {/* Header */}
+    <div
+      ref={wrapperRef}
+      style={{
+        position: 'relative',
+        width: '100%', height: '100vh',
+        display: 'flex', flexDirection: 'column',
+        overflow: 'hidden',
+        fontFamily: 'var(--font)',
+        // Warm aurora — รุ่งอรุณ ไม่ใช่ purple-to-blue ทั่วๆ ไป
+        background: `
+          radial-gradient(ellipse 80% 60% at 18% 12%, rgba(255, 214, 180, 0.55) 0%, transparent 55%),
+          radial-gradient(ellipse 70% 55% at 85% 20%, rgba(195, 220, 200, 0.45) 0%, transparent 60%),
+          radial-gradient(ellipse 90% 70% at 50% 110%, rgba(220, 200, 230, 0.40) 0%, transparent 60%),
+          linear-gradient(180deg, #FCF5E9 0%, #F7EDDF 45%, #EFE5D5 100%)
+        `,
+      }}
+    >
+      {/* Grain texture overlay — soft noise ไม่ให้พื้นเรียบเกินไป */}
+      <div aria-hidden style={{
+        position: 'absolute', inset: 0, zIndex: 1,
+        background: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.2 0 0 0 0 0.15 0 0 0 0.13 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")`,
+        opacity: 0.35, mixBlendMode: 'multiply', pointerEvents: 'none',
+      }} />
+
+      {/* ── Header ── */}
       <motion.div
-        initial={{ opacity: 0, y: -8 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.4, ease: [0.22, 0.9, 0.3, 1] }}
         style={{
-          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-          padding: '1.25rem 1.25rem 0.5rem',
-          display: 'flex', alignItems: 'center', gap: 12,
+          position: 'absolute', top: 20, left: 20, right: 20, zIndex: 12,
+          display: 'flex', alignItems: 'center', gap: 14,
           pointerEvents: 'none',
         }}
       >
@@ -115,45 +236,63 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
           onClick={onBack}
           aria-label="กลับ"
           style={{
-            background: 'rgba(255,255,255,0.85)',
-            border: '1px solid rgba(0,0,0,0.06)',
-            cursor: 'pointer', color: '#334155',
-            display: 'flex', padding: 9, borderRadius: 999,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+            background: 'rgba(253, 246, 235, 0.85)',
+            border: '1px solid rgba(180, 130, 90, 0.18)',
+            cursor: 'pointer', color: '#5C3A24',
+            display: 'flex', padding: 11, borderRadius: 999,
+            boxShadow: '0 6px 18px rgba(160, 110, 75, 0.10)',
             pointerEvents: 'auto',
-            backdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            transition: 'transform 180ms ease, box-shadow 180ms ease',
           }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)' }}
         >
           <ArrowLeft size={18} />
         </button>
-        <div style={{ pointerEvents: 'auto' }}>
+
+        <div style={{ pointerEvents: 'auto', flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <Sparkles size={14} style={{ color: '#C9824F' }} />
+            <span style={{
+              fontSize: 10.5, fontWeight: 600, letterSpacing: '0.18em',
+              textTransform: 'uppercase', color: '#9C6A42',
+            }}>
+              Anatomy · 3D
+            </span>
+          </div>
           <h1 style={{
-            fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em',
-            color: '#0F172A', margin: 0,
+            fontSize: 26, fontWeight: 700, letterSpacing: '-0.022em',
+            color: '#2A1810', margin: '2px 0 0', lineHeight: 1.1,
           }}>
             สมอง 3 มิติ
           </h1>
-          <p style={{ fontSize: 12.5, color: '#475569', margin: '2px 0 0' }}>
-            ลากเพื่อหมุน · scroll เพื่อ zoom · คลิกขวาเพื่อเลื่อน
+          <p style={{ fontSize: 12, color: '#7A5439', margin: '3px 0 0', fontWeight: 500 }}>
+            ลากเพื่อหมุน · เลื่อนเพื่อซูม · คลิกชื่อในเลเจนด์เพื่อโฟกัส
           </p>
         </div>
 
-        {/* ปุ่ม Auto-rotate toggle (มุมขวา) */}
         <button
           onClick={() => setAutoRotate(v => !v)}
           aria-label={autoRotate ? 'หยุดหมุนอัตโนมัติ' : 'หมุนอัตโนมัติ'}
           title={autoRotate ? 'หยุดหมุนอัตโนมัติ' : 'หมุนอัตโนมัติ'}
           style={{
-            marginLeft: 'auto', pointerEvents: 'auto',
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '8px 13px', borderRadius: 999,
-            background: autoRotate ? '#0F172A' : 'rgba(255,255,255,0.85)',
-            color: autoRotate ? '#fff' : '#334155',
-            border: '1px solid rgba(0,0,0,0.06)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+            pointerEvents: 'auto',
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 16px', borderRadius: 999,
+            background: autoRotate
+              ? 'linear-gradient(135deg, #C9824F 0%, #B86A3C 100%)'
+              : 'rgba(253, 246, 235, 0.85)',
+            color: autoRotate ? '#FFF8EE' : '#5C3A24',
+            border: autoRotate ? 'none' : '1px solid rgba(180, 130, 90, 0.18)',
+            boxShadow: autoRotate
+              ? '0 8px 24px rgba(201, 130, 79, 0.35), inset 0 1px 0 rgba(255,255,255,0.2)'
+              : '0 6px 18px rgba(160, 110, 75, 0.10)',
             cursor: 'pointer', fontFamily: 'var(--font)',
             fontSize: 12.5, fontWeight: 600,
-            backdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+            transition: 'transform 180ms ease, box-shadow 200ms ease',
           }}
         >
           {autoRotate ? <Pause size={13} /> : <Play size={13} />}
@@ -161,93 +300,163 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
         </button>
       </motion.div>
 
-      {/* Legend / คำอธิบายมุมล่าง */}
+      {/* ── Legend (interactive) — ซ้ายล่าง ── */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.4 }}
+        transition={{ delay: 0.35, duration: 0.45, ease: [0.22, 0.9, 0.3, 1] }}
         style={{
-          position: 'absolute', bottom: 18, left: 18, zIndex: 10,
-          background: 'rgba(255,255,255,0.85)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          borderRadius: 12, padding: '10px 14px',
-          boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
-          maxWidth: 220,
+          position: 'absolute', bottom: 22, left: 22, zIndex: 12,
+          background: 'rgba(253, 246, 235, 0.82)',
+          backdropFilter: 'blur(16px) saturate(1.1)',
+          WebkitBackdropFilter: 'blur(16px) saturate(1.1)',
+          border: '1px solid rgba(180, 130, 90, 0.16)',
+          borderRadius: 20, padding: '14px 16px 12px',
+          boxShadow: '0 12px 32px rgba(120, 80, 50, 0.12)',
+          maxWidth: 240,
         }}
       >
         <p style={{
-          fontSize: 11, fontWeight: 700, color: '#0F172A',
-          margin: '0 0 6px', letterSpacing: '0.04em', textTransform: 'uppercase',
+          fontSize: 10, fontWeight: 700, color: '#9C6A42',
+          margin: '0 0 9px', letterSpacing: '0.16em', textTransform: 'uppercase',
         }}>
-          ส่วนประกอบ
+          ส่วนประกอบ · Regions
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {BRAIN_PARTS.map(p => (
-            <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{
-                width: 9, height: 9, borderRadius: '50%',
-                background: p.color, flexShrink: 0,
-                boxShadow: `0 0 8px ${p.color}66`,
-              }} />
-              <span style={{ fontSize: 11.5, color: '#334155', fontWeight: 500 }}>
-                {p.name}
-              </span>
-            </div>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {BRAIN_PARTS.map(p => {
+            const active = focusedId === p.id
+            return (
+              <button
+                key={p.id}
+                onMouseEnter={() => setFocusedId(p.id)}
+                onMouseLeave={() => setFocusedId(null)}
+                onFocus={() => setFocusedId(p.id)}
+                onBlur={() => setFocusedId(null)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 9,
+                  padding: '6px 9px', borderRadius: 12,
+                  background: active ? `${p.color}1F` : 'transparent',
+                  border: 'none', cursor: 'pointer',
+                  textAlign: 'left', width: '100%',
+                  transition: 'background 180ms ease',
+                  fontFamily: 'var(--font)',
+                }}
+              >
+                <span style={{
+                  width: 10, height: 10, borderRadius: '50%',
+                  background: p.color, flexShrink: 0,
+                  boxShadow: active
+                    ? `0 0 0 3px ${p.color}33, 0 0 10px ${p.color}AA`
+                    : `0 0 6px ${p.color}66`,
+                  transition: 'box-shadow 200ms ease',
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 12, color: '#3A2618', fontWeight: 600,
+                    lineHeight: 1.15, letterSpacing: '-0.005em',
+                  }}>
+                    {p.name}
+                  </div>
+                  <div style={{
+                    fontSize: 10.5, color: '#9A7858', fontWeight: 500,
+                    lineHeight: 1.2, marginTop: 1,
+                  }}>
+                    {p.thai}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
         </div>
       </motion.div>
 
-      {/* 3D Canvas */}
-      <div className="r3f-fill" style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+      {/* ── Hint chip — ขวาล่าง ── */}
+      <AnimatePresence>
+        {!focusedId && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ delay: 0.55, duration: 0.4 }}
+            style={{
+              position: 'absolute', bottom: 26, right: 26, zIndex: 12,
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '9px 14px', borderRadius: 999,
+              background: 'linear-gradient(135deg, rgba(58,38,24,0.88) 0%, rgba(92,58,36,0.88) 100%)',
+              color: '#FCF5E9',
+              fontSize: 11.5, fontWeight: 600, letterSpacing: '0.01em',
+              backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+              boxShadow: '0 10px 28px rgba(60, 38, 22, 0.30)',
+              border: '1px solid rgba(255, 220, 180, 0.12)',
+              pointerEvents: 'none',
+            }}
+          >
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: '#E0A867', boxShadow: '0 0 8px #E0A867',
+              animation: 'braindrop-pulse 1.6s ease-in-out infinite',
+            }} />
+            ลากเมาส์เพื่อหมุนสมอง
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <style>{`@keyframes braindrop-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }`}</style>
+
+      {/* ── 3D Canvas ── */}
+      <div className="r3f-fill" style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
         <Canvas
-          camera={{ position: [3.5, 1.5, 4.5], fov: 45 }}
+          camera={{ position: [3.5, 1.6, 4.6], fov: 45 }}
           dpr={[1, 2]}
+          gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false }}
           style={{ width: '100%', height: '100%', display: 'block' }}
         >
           <Suspense fallback={
             <Html center>
               <div style={{
-                padding: '10px 16px', borderRadius: 10,
-                background: 'rgba(255,255,255,0.92)',
-                border: '1px solid rgba(0,0,0,0.06)',
-                fontSize: 13, color: '#475569', fontWeight: 600,
+                padding: '12px 18px', borderRadius: 14,
+                background: 'rgba(253, 246, 235, 0.94)',
+                border: '1px solid rgba(180, 130, 90, 0.18)',
+                fontSize: 13, color: '#5C3A24', fontWeight: 600,
+                fontFamily: 'var(--font)',
+                boxShadow: '0 10px 28px rgba(120, 80, 50, 0.15)',
               }}>
-                กำลังโหลดโมเดล 3D...
+                กำลังโหลดโมเดล…
               </div>
             </Html>
           }>
-            <Environment preset="city" />
-            <ambientLight intensity={0.7} />
-            <directionalLight position={[6, 8, 4]} intensity={1.1} />
-            <directionalLight position={[-6, -4, -3]} intensity={0.45} />
+            <Environment preset="apartment" />
+            <ambientLight intensity={0.55} color="#FFF1DC" />
+            {/* Key light — soft warm rim */}
+            <directionalLight position={[5, 7, 4]} intensity={1.0} color="#FFE3C2" />
+            {/* Fill — cool to balance */}
+            <directionalLight position={[-5, -2, -3]} intensity={0.35} color="#B8D5E0" />
+            {/* Bottom kiss — sage */}
+            <pointLight position={[0, -3, 2]} intensity={0.4} color="#C8DBB4" distance={8} />
 
-            {/* Center + Bounds จัด brain ให้อยู่ตรงกลางและขนาดสม่ำเสมอ
-                margin=1.6 = เว้นรอบขอบให้เห็นป้ายข้อความ */}
             <Bounds fit clip observe margin={1.6}>
               <Center>
-                <BrainModel />
+                <BrainModel tint="#E0A398" />
               </Center>
             </Bounds>
 
-            {/* Annotations อยู่ในพิกัดโลก (ไม่ผูกกับ Bounds/Center)
-                — จะลอยรอบสมองในระยะที่เห็นชัด */}
             {BRAIN_PARTS.map(p => (
               <BrainAnnotation
-                key={p.name}
+                key={p.id}
                 name={p.name}
+                thai={p.thai}
                 desc={p.desc}
                 color={p.color}
                 position={p.pos as unknown as [number, number, number]}
+                focused={focusedId === p.id}
+                onHover={() => setFocusedId(p.id)}
+                onLeave={() => setFocusedId(null)}
               />
             ))}
 
             <OrbitControls
-              enablePan
-              enableZoom
-              enableRotate
-              minDistance={2.5}
-              maxDistance={12}
+              enablePan enableZoom enableRotate
+              minDistance={2.5} maxDistance={12}
               autoRotate={autoRotate}
               autoRotateSpeed={0.8}
               makeDefault
@@ -255,23 +464,6 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
           </Suspense>
         </Canvas>
       </div>
-
-      {/* Floating hint chip ที่มุมขวาล่าง */}
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
-        style={{
-          position: 'absolute', bottom: 18, right: 18, zIndex: 10,
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '7px 12px', borderRadius: 999,
-          background: 'rgba(15,23,42,0.85)', color: '#fff',
-          fontSize: 11.5, fontWeight: 600, letterSpacing: '0.01em',
-          backdropFilter: 'blur(10px)',
-          boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
-        }}
-      >
-        <RotateCw size={12} />
-        ลากเพื่อหมุนรอบสมอง
-      </motion.div>
     </div>
   )
 }
