@@ -446,7 +446,11 @@ function EditForm({ item, onCancel, onSaved }: {
     const tags = tagInput.split(/[\s,]+/).map(t => t.trim()).filter(Boolean).map(t => t.startsWith('#') ? t : '#' + t)
     const id = form.id || form.title.toLowerCase().replace(/[^a-z0-9ก-๙]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 50) || `item-${Date.now()}`
     if (!form.title.trim()) { setError('กรุณาใส่ชื่อเรื่อง'); return }
-    if (!form.slidesEmbedUrl.trim()) { setError('กรุณาใส่ Google Slides embed URL'); return }
+    // ต้องมีแหล่งเนื้อหาอย่างน้อย 1 อย่าง — Google Slides หรือ Drive/PDF (รองรับสไลด์หน้าเดียว)
+    if (!form.slidesEmbedUrl.trim() && !form.pdfUrl?.trim()) {
+      setError('ใส่ Google Slides URL หรือลิงก์ Drive/PDF อย่างน้อย 1 อัน')
+      return
+    }
 
     setBusy(true)
     try {
@@ -481,8 +485,11 @@ function EditForm({ item, onCancel, onSaved }: {
         <label style={labelStyle}>Tags (เว้นวรรคหรือคอมมา)</label>
         <input type="text" value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="#midterm #บทที่1 #สรุป" />
 
-        <label style={labelStyle}>Google Slides embed URL *</label>
-        <input type="text" value={form.slidesEmbedUrl} onChange={e => set('slidesEmbedUrl', e.target.value)} placeholder="https://docs.google.com/presentation/d/.../embed" required />
+        <label style={labelStyle}>Google Slides embed URL</label>
+        <input type="text" value={form.slidesEmbedUrl} onChange={e => set('slidesEmbedUrl', e.target.value)} placeholder="https://docs.google.com/presentation/d/.../embed — ปล่อยว่างได้ถ้าใช้ Drive/PDF" />
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-subtle)', marginTop: 4 }}>
+          ใส่อันใดอันหนึ่ง: Google Slides ด้านบน <strong>หรือ</strong> ลิงก์ Drive/PDF ด้านล่าง (สำหรับสไลด์หน้าเดียว)
+        </p>
 
         <label style={labelStyle}>ลิงก์ดาวน์โหลด PDF (ไม่บังคับ)</label>
         <input type="text" value={form.driveUrl ?? ''} onChange={e => set('driveUrl', e.target.value)} placeholder="https://drive.google.com/..." />

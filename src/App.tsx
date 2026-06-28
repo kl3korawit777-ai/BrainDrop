@@ -47,8 +47,8 @@ function PublicSite() {
         {!entered && <CoverPage key="cover" onEnter={() => setEntered(true)} />}
       </AnimatePresence>
 
-      {/* ปุ่มลอย: กลับหน้าแรกของเว็บ (หน้าปก) */}
-      {entered && (
+      {/* ปุ่มลอย: กลับหน้าแรกของเว็บ (หน้าปก) — ซ่อนใน brain viewer (มี back ในตัว viewer แล้ว) */}
+      {entered && view !== 'brain' && !openItemId && (
         <button
           onClick={goCover}
           aria-label="กลับหน้าแรก"

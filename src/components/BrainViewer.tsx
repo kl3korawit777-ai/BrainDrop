@@ -1,6 +1,6 @@
 import { Suspense, useState, useEffect, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Html, Environment, useGLTF, Center, Bounds } from '@react-three/drei'
+import { OrbitControls, Html, Environment, useGLTF, Center } from '@react-three/drei'
 import { ArrowLeft, Pause, Play, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as THREE from 'three'
@@ -152,7 +152,8 @@ function BrainAnnotation({
   )
 }
 
-/** ทาสีสมองให้เป็น warm coral แบบกายวิภาค — แทนสีเทาเริ่มต้นของ GLTF */
+/** ทาสีสมองให้เป็น warm coral แบบกายวิภาค + auto-scale ให้แกนยาวสุด ≈ 3 หน่วย
+ *  เพื่อให้พิกัดของ BRAIN_PARTS (~±1.2) แตะผิวสมองพอดี — ไม่งั้นป้ายจะลอยห่าง/ทับกัน */
 function BrainModel({ tint }: { tint: string }) {
   const { scene } = useGLTF(MODEL_URL)
   useEffect(() => {
@@ -175,6 +176,14 @@ function BrainModel({ tint }: { tint: string }) {
       obj.castShadow = true
       obj.receiveShadow = true
     })
+    // วัด bbox แล้ว scale ให้แกนยาวสุด = 3 หน่วย (idempotent — reset ก่อนวัด)
+    scene.scale.set(1, 1, 1)
+    scene.updateMatrixWorld(true)
+    const box = new THREE.Box3().setFromObject(scene)
+    const size = new THREE.Vector3()
+    box.getSize(size)
+    const maxDim = Math.max(size.x, size.y, size.z)
+    if (maxDim > 0) scene.scale.setScalar(3 / maxDim)
   }, [scene, tint])
   return <primitive object={scene} />
 }
@@ -395,7 +404,7 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
       {/* ── 3D Canvas ── */}
       <div className="r3f-fill" style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
         <Canvas
-          camera={{ position: [3.5, 1.6, 4.6], fov: 45 }}
+          camera={{ position: [4.2, 1.8, 5.4], fov: 42 }}
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false }}
           style={{ width: '100%', height: '100%', display: 'block' }}
@@ -423,11 +432,9 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
             {/* Bottom kiss — sage */}
             <pointLight position={[0, -3, 2]} intensity={0.4} color="#C8DBB4" distance={8} />
 
-            <Bounds fit clip observe margin={1.6}>
-              <Center>
-                <BrainModel tint="#E0A398" />
-              </Center>
-            </Bounds>
+            <Center>
+              <BrainModel tint="#E0A398" />
+            </Center>
 
             {BRAIN_PARTS.map(p => (
               <BrainAnnotation

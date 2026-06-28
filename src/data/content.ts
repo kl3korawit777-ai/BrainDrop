@@ -100,6 +100,30 @@ export function getSlidesThumbnail(raw: string, size = 1000): string | null {
 export function coverFor(item: { coverUrl?: string; slidesEmbedUrl: string }): string | null {
   return item.coverUrl ?? getSlidesThumbnail(item.slidesEmbedUrl)
 }
+
+/** ดึง Drive file ID จาก URL หลากรูปแบบ — /file/d/ID/view, ?id=ID, /open?id=ID */
+function parseDriveFileId(raw: string): string | null {
+  if (!raw) return null
+  const m = raw.match(/\/file\/d\/([^/?#]+)/) ?? raw.match(/[?&]id=([^&]+)/)
+  return m ? m[1] : null
+}
+
+/** แปลง Drive URL → preview iframe URL (รองรับ PDF / รูปสไลด์เดี่ยว) */
+export function toDrivePreviewUrl(raw: string): string | null {
+  if (!raw) return null
+  const id = parseDriveFileId(raw)
+  if (!id) return raw
+  return `https://drive.google.com/file/d/${id}/preview`
+}
+
+/** เลือกแหล่ง embed สำหรับ viewer — Slides ก่อน, ไม่งั้นใช้ Drive/PDF (หน้าเดียว) */
+export function chooseEmbedSrc(item: { slidesEmbedUrl?: string; pdfUrl?: string }): string | null {
+  if (item.slidesEmbedUrl && !item.slidesEmbedUrl.includes('EXAMPLE_ID')) {
+    return toSlidesEmbedUrl(item.slidesEmbedUrl)
+  }
+  if (item.pdfUrl) return toDrivePreviewUrl(item.pdfUrl)
+  return null
+}
 // ─── เนื้อหา — เพิ่ม item ใหม่ที่นี่ ──────────────────────────────────────────
 export const content: ContentItem[] = [
   {

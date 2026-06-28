@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Download, ExternalLink, Maximize2, Check, MoveHorizontal } from 'lucide-react'
 import type { ContentItem } from '../data/content'
-import { getTagStyle, toSlidesEmbedUrl, toSlidesOpenUrl } from '../data/content'
+import { getTagStyle, toSlidesOpenUrl, chooseEmbedSrc } from '../data/content'
 import { useStore } from '../store/useStore'
 
 interface Props {
@@ -23,7 +23,9 @@ export default function SlidesViewer({ item, onBack }: Props) {
     setReadProgress(item.id, isDone ? 0 : item.slideCount)
   }
 
-  const isPlaceholder = item.slidesEmbedUrl.includes('EXAMPLE_ID')
+  const embedSrc = chooseEmbedSrc(item)
+  const hasSlides = item.slidesEmbedUrl && !item.slidesEmbedUrl.includes('EXAMPLE_ID')
+  const isPdfFallback = !hasSlides && !!item.pdfUrl
 
   return (
     <motion.div
@@ -70,14 +72,16 @@ export default function SlidesViewer({ item, onBack }: Props) {
               <Download size={14} /> PDF
             </a>
           )}
-          <a href={toSlidesOpenUrl(item.slidesEmbedUrl)} target="_blank" rel="noreferrer" style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            padding: '6px 12px', borderRadius: 8,
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            color: 'var(--text-muted)', fontSize: 13,
-          }}>
-            <ExternalLink size={14} /> เปิดใน Slides
-          </a>
+          {hasSlides && (
+            <a href={toSlidesOpenUrl(item.slidesEmbedUrl)} target="_blank" rel="noreferrer" style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '6px 12px', borderRadius: 8,
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              color: 'var(--text-muted)', fontSize: 13,
+            }}>
+              <ExternalLink size={14} /> เปิดใน Slides
+            </a>
+          )}
         </div>
       </div>
 
@@ -87,22 +91,22 @@ export default function SlidesViewer({ item, onBack }: Props) {
         borderRadius: 'var(--radius)', overflow: 'hidden',
         aspectRatio: '16/9', position: 'relative',
       }}>
-        {isPlaceholder ? (
+        {!embedSrc ? (
           <div style={{
             position: 'absolute', inset: 0, display: 'flex',
             flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            gap: 12, color: 'var(--text-muted)',
+            gap: 12, color: 'var(--text-muted)', padding: 20, textAlign: 'center',
           }}>
             <span style={{ fontSize: 40 }}>🎞️</span>
-            <p style={{ fontSize: 14, textAlign: 'center' }}>
-              วาง Google Slides embed URL ใน <code style={{ background: 'var(--border)', padding: '2px 6px', borderRadius: 4 }}>content.ts</code>
+            <p style={{ fontSize: 14 }}>
+              ยังไม่มีเนื้อหา — ใส่ Google Slides URL หรือลิงก์ Drive/PDF ใน Admin
             </p>
           </div>
         ) : (
           <iframe
             ref={iframeRef}
             key={item.id}
-            src={toSlidesEmbedUrl(item.slidesEmbedUrl)}
+            src={embedSrc}
             title={item.title}
             allowFullScreen
             style={{ width: '100%', height: '100%', border: 'none' }}
@@ -117,7 +121,9 @@ export default function SlidesViewer({ item, onBack }: Props) {
       }}>
         <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-muted)' }}>
           <MoveHorizontal size={15} />
-          เลื่อนสไลด์ด้วยลูกศร <strong style={{ color: 'var(--text)' }}>‹ ›</strong> ที่มุมล่างของสไลด์ หรือกด <strong style={{ color: 'var(--text)' }}>เต็มจอ</strong>
+          {isPdfFallback
+            ? <>หน้าเดียวจาก Drive · กด <strong style={{ color: 'var(--text)' }}>เต็มจอ</strong> เพื่อดูใหญ่</>
+            : <>เลื่อนสไลด์ด้วยลูกศร <strong style={{ color: 'var(--text)' }}>‹ ›</strong> ที่มุมล่างของสไลด์ หรือกด <strong style={{ color: 'var(--text)' }}>เต็มจอ</strong></>}
         </p>
         <button onClick={toggleDone} style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
