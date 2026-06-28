@@ -8,14 +8,44 @@ import * as THREE from 'three'
 const MODEL_URL = '/Brain_Model_(Right)_-_General_anatomy/Brain_Model_(Right)_-_General_anatomy.gltf'
 
 /** Warm aurora palette — โทนแสงธรรมชาติ (ไม่ neon ไม่ AI slop)
- *  แต่ละสีถูก eyedrop จากภาพรุ่งอรุณ + เซรามิคโบราณ */
+ *  แต่ละสีถูก eyedrop จากภาพรุ่งอรุณ + เซรามิคโบราณ
+ *  functions[] อ้างอิงตำราของ hopkinsmedicine.org */
 const BRAIN_PARTS = [
-  { id: 'frontal',    name: 'Frontal Lobe',   thai: 'สมองส่วนหน้า',  desc: 'การคิด · ตัดสินใจ',      color: '#E68C7E', pos: [0.9,  1.2,  0.4] },
-  { id: 'parietal',   name: 'Parietal Lobe',  thai: 'สมองส่วนกลาง',  desc: 'รับสัมผัส · ภาษา',       color: '#7BAFA3', pos: [0.2,  1.6, -0.3] },
-  { id: 'occipital',  name: 'Occipital Lobe', thai: 'สมองส่วนหลัง',  desc: 'การมองเห็น',              color: '#A5BF8A', pos: [-1.1, 0.7, -0.5] },
-  { id: 'temporal',   name: 'Temporal Lobe',  thai: 'สมองด้านข้าง',  desc: 'ความจำ · การได้ยิน',     color: '#E0A867', pos: [0.6,  0.0,  1.0] },
-  { id: 'cerebellum', name: 'Cerebellum',     thai: 'สมองน้อย',       desc: 'การทรงตัว · เคลื่อนไหว', color: '#B49AD1', pos: [-1.0,-0.3,  0.3] },
-  { id: 'stem',       name: 'Brain Stem',     thai: 'ก้านสมอง',       desc: 'หายใจ · หัวใจ',          color: '#A99685', pos: [-0.3,-1.0,  0.4] },
+  {
+    id: 'frontal', name: 'Frontal Lobe', thai: 'สมองส่วนหน้า',
+    color: '#E68C7E', pos: [0.9, 1.2, 0.4],
+    functions: ['บุคลิกภาพ · ทักษะทางสังคม', 'การตัดสินใจ · การให้เหตุผล', 'การควบคุมอารมณ์', 'การเคลื่อนไหว · การพูด'],
+  },
+  {
+    id: 'parietal', name: 'Parietal Lobe', thai: 'สมองส่วนกลาง',
+    color: '#7BAFA3', pos: [0.2, 1.6, -0.3],
+    functions: ['รับการนำเข้าของประสาทสัมผัส', 'ประมวลผลภาษา · การอ่าน/เขียน', 'รับรู้ทิศทางและความลึก', 'การคำนวณ'],
+  },
+  {
+    id: 'occipital', name: 'Occipital Lobe', thai: 'สมองส่วนหลัง',
+    color: '#A5BF8A', pos: [-1.1, 0.7, -0.5],
+    functions: ['การมองเห็น · การแยกแยะสี', 'การรับรู้รูปทรง'],
+  },
+  {
+    id: 'temporal', name: 'Temporal Lobe', thai: 'สมองด้านข้าง',
+    color: '#E0A867', pos: [0.6, 0.0, 1.0],
+    functions: ['ความจำ · การรับรู้วัตถุ', 'การเข้าใจภาษา · การฟัง', 'ศิลปะ · ดนตรี', 'การเชื่อมโยงความจำกับการรับรู้'],
+  },
+  {
+    id: 'cerebellum', name: 'Cerebellum', thai: 'สมองน้อย',
+    color: '#B49AD1', pos: [-1.0, -0.3, 0.3],
+    functions: ['ประสานการเคลื่อนไหว', 'การรักษาสมดุล', 'การควบคุมอารมณ์ · ความตั้งใจ'],
+  },
+  {
+    id: 'basal', name: 'Basal Ganglia', thai: 'แกนกลางสมอง',
+    color: '#C77D8F', pos: [-0.1, 0.15, 0.25],
+    functions: ['ความจำ · อารมณ์', 'การประสานการเคลื่อนไหว'],
+  },
+  {
+    id: 'stem', name: 'Brain Stem', thai: 'ก้านสมอง',
+    color: '#A99685', pos: [-0.3, -1.0, 0.4],
+    functions: ['การหายใจ · การเต้นของหัวใจ', 'ส่งสัญญาณไปไขสันหลัง'],
+  },
 ] as const
 
 type PartId = typeof BRAIN_PARTS[number]['id']
@@ -53,9 +83,9 @@ function ArrowSVG({ color }: { color: string }) {
 }
 
 function BrainAnnotation({
-  name, thai, desc, color, position, focused, onHover, onLeave,
+  name, thai, functions, color, position, focused, onHover, onLeave,
 }: {
-  name: string; thai: string; desc: string; color: string
+  name: string; thai: string; functions: readonly string[]; color: string
   position: [number, number, number]
   focused: boolean
   onHover: () => void; onLeave: () => void
@@ -109,12 +139,12 @@ function BrainAnnotation({
               WebkitBackdropFilter: 'blur(14px) saturate(1.1)',
               border: `1px solid ${color}33`,
               borderRadius: 18,
-              padding: '8px 13px 9px',
+              padding: '9px 14px 11px',
               boxShadow: focused
                 ? `0 14px 32px ${color}33, 0 4px 12px rgba(120, 80, 50, 0.10)`
                 : '0 8px 22px rgba(120, 80, 50, 0.10)',
               textAlign: 'left',
-              minWidth: 132,
+              minWidth: 156, maxWidth: 220,
               marginBottom: 0,
               transition: 'box-shadow 250ms ease',
             }}
@@ -125,7 +155,7 @@ function BrainAnnotation({
               borderRadius: 999, background: color,
               boxShadow: `0 0 6px ${color}88`,
             }} />
-            <div style={{ paddingLeft: 10 }}>
+            <div style={{ paddingLeft: 11 }}>
               <p style={{
                 fontSize: 11.5, fontWeight: 700, color: '#3A2618',
                 margin: 0, lineHeight: 1.15, letterSpacing: '-0.005em',
@@ -136,10 +166,25 @@ function BrainAnnotation({
                 lineHeight: 1.2, fontWeight: 500, letterSpacing: '0.01em',
                 fontFamily: 'var(--font)',
               }}>{thai}</p>
-              <p style={{
-                fontSize: 9, color: '#9A7858', margin: '3px 0 0',
-                lineHeight: 1.25, fontFamily: 'var(--font)',
-              }}>{desc}</p>
+              <ul style={{
+                listStyle: 'none', margin: '5px 0 0', padding: 0,
+                display: 'flex', flexDirection: 'column', gap: 1.5,
+              }}>
+                {functions.map((f, i) => (
+                  <li key={i} style={{
+                    fontSize: 9, color: '#9A7858', lineHeight: 1.3,
+                    fontFamily: 'var(--font)', position: 'relative',
+                    paddingLeft: 8,
+                  }}>
+                    <span style={{
+                      position: 'absolute', left: 0, top: 4,
+                      width: 3, height: 3, borderRadius: '50%',
+                      background: color, opacity: 0.7,
+                    }} />
+                    {f}
+                  </li>
+                ))}
+              </ul>
             </div>
           </motion.div>
           {/* ลูกศร SVG ปลายมน */}
@@ -453,7 +498,7 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
                 key={p.id}
                 name={p.name}
                 thai={p.thai}
-                desc={p.desc}
+                functions={p.functions}
                 color={p.color}
                 position={p.pos as unknown as [number, number, number]}
                 focused={focusedId === p.id}
