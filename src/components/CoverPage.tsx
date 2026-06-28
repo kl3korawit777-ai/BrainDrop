@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import Logo from './Logo'
+import { DottedSurface } from './ui/dotted-surface'
 
 interface Props {
   onEnter: () => void
@@ -18,45 +19,65 @@ export default function CoverPage({ onEnter }: Props) {
         position: 'fixed', inset: 0, zIndex: 60,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', gap: 26,
-        background: 'radial-gradient(circle at 50% 35%, var(--accent-light) 0%, var(--bg) 60%)',
+        background: 'var(--bg)',
         padding: '2rem',
+        overflow: 'hidden',
       }}
     >
-      {/* โลโก้ drop-in */}
-      <motion.div
-        initial={{ y: -120, opacity: 0, scale: 0.7 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
-      >
-        <Logo size={104} withText />
-      </motion.div>
-
-      <motion.p
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.4 }}
-        style={{ color: 'var(--text-muted)', fontSize: 15.5, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}
-      >
-        สรุปรายวิชา อ่านง่าย เข้าใจไว — รวมไว้ในที่เดียว
-      </motion.p>
-
-      <motion.button
-        onClick={onEnter}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.65, duration: 0.4 }}
-        whileHover={{ y: -2 }}
-        whileTap={{ scale: 0.97 }}
+      {/* Animation พื้นหลัง dotted surface — absolute (ไม่ fixed) เพื่อให้กระจายเฉพาะกล่อง cover */}
+      <DottedSurface style={{ position: 'absolute', inset: 0, zIndex: 0 }} />
+      {/* Soft radial overlay เพื่อให้ตัวอักษรอ่านง่ายขึ้นและกลืนกับธีม */}
+      <div
+        aria-hidden
         style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          padding: '12px 26px', borderRadius: 999,
-          background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer',
-          fontFamily: 'var(--font)', fontSize: 15, fontWeight: 600,
-          boxShadow: '0 8px 24px rgba(79,70,229,0.35)',
+          position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
+          background:
+            'radial-gradient(ellipse at 50% 35%, color-mix(in oklab, var(--accent-light) 75%, transparent) 0%, color-mix(in oklab, var(--bg) 55%, transparent) 55%, color-mix(in oklab, var(--bg) 85%, transparent) 100%)',
         }}
-      >
-        เข้าสู่เว็บไซต์ <ArrowRight size={18} />
-      </motion.button>
+      />
+
+      {/* Content layer — เหนือ animation + overlay */}
+      <div style={{
+        position: 'relative', zIndex: 2,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', gap: 26,
+      }}>
+        {/* โลโก้ drop-in */}
+        <motion.div
+          initial={{ y: -120, opacity: 0, scale: 0.7 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
+        >
+          <Logo size={104} withText />
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+          style={{ color: 'var(--text-muted)', fontSize: 15.5, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}
+        >
+          สรุปรายวิชา อ่านง่าย เข้าใจไว — รวมไว้ในที่เดียว
+        </motion.p>
+
+        <motion.button
+          onClick={onEnter}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65, duration: 0.4 }}
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.97 }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '12px 26px', borderRadius: 999,
+            background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer',
+            fontFamily: 'var(--font)', fontSize: 15, fontWeight: 600,
+            boxShadow: '0 8px 24px rgba(79,70,229,0.35)',
+          }}
+        >
+          เข้าสู่เว็บไซต์ <ArrowRight size={18} />
+        </motion.button>
+      </div>
     </motion.div>
   )
 }
