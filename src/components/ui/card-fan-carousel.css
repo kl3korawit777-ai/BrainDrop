@@ -4,18 +4,18 @@
    ค่าความสูง layout อิงตาม breakpoint ใน getHeightMultiplier(): 22/26/28/34/38rem */
 
 .fan-layout {
-  height: 22rem;
+  height: 19rem;
 }
 
 .fan-card {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 8rem;
-  height: 11.2rem;
-  margin-left: -4rem;
-  margin-top: -5.6rem;
-  border-radius: 1rem;
+  width: 6.6rem;
+  height: 9.24rem;
+  margin-left: -3.3rem;
+  margin-top: -4.62rem;
+  border-radius: 0.9rem;
   overflow: hidden;
   background: var(--surface, #fff);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.10);
@@ -35,6 +35,11 @@
   -webkit-user-drag: none;
   user-select: none;
   pointer-events: none;
+}
+
+@media (min-width: 420px) {
+  .fan-layout { height: 22rem; }
+  .fan-card { width: 8rem; height: 11.2rem; margin-left: -4rem; margin-top: -5.6rem; border-radius: 1rem; }
 }
 
 @media (min-width: 480px) {

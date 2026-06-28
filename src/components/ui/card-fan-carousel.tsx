@@ -32,10 +32,12 @@ const FAN_POSITIONS = [
 ];
 
 function getResponsiveMultiplier(width: number) {
-  if (width < 480) return 0.28;
-  if (width < 640) return 0.38;
-  if (width < 768) return 0.5;
-  if (width < 1024) return 0.75;
+  if (width < 360) return 0.14;
+  if (width < 420) return 0.18;
+  if (width < 480) return 0.22;
+  if (width < 640) return 0.32;
+  if (width < 768) return 0.48;
+  if (width < 1024) return 0.72;
   return 1.0;
 }
 
@@ -46,7 +48,8 @@ function getResponsiveMultiplier(width: number) {
 function getHeightMultiplier(width: number) {
   // Ideal layout heights (in px at 16px root) matching the CSS breakpoints
   let idealPx: number;
-  if (width < 480) idealPx = 22 * 16;       // 352px
+  if (width < 420) idealPx = 19 * 16;       // 304px
+  else if (width < 480) idealPx = 22 * 16;  // 352px
   else if (width < 640) idealPx = 26 * 16;  // 416px
   else if (width < 768) idealPx = 28 * 16;  // 448px
   else if (width < 1024) idealPx = 34 * 16; // 544px

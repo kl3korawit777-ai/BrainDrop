@@ -223,6 +223,7 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.22, 0.9, 0.3, 1] }}
+        className="brain-header"
         style={{
           position: 'absolute', top: 20, left: 20, right: 20, zIndex: 12,
           display: 'flex', alignItems: 'center', gap: 14,
@@ -259,14 +260,14 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
               Anatomy · 3D
             </span>
           </div>
-          <h1 style={{
+          <h1 className="brain-title" style={{
             fontFamily: 'var(--font-display)',
             fontSize: 28, fontWeight: 800, letterSpacing: '-0.022em',
             color: 'var(--text)', margin: '2px 0 0', lineHeight: 1.1,
           }}>
             สมอง 3 มิติ
           </h1>
-          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '4px 0 0', fontWeight: 500 }}>
+          <p className="brain-subtitle" style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '4px 0 0', fontWeight: 500 }}>
             ลากเพื่อหมุน · เลื่อนเพื่อซูม · คลิกชื่อในเลเจนด์เพื่อโฟกัส
           </p>
         </div>
@@ -294,7 +295,7 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
           }}
         >
           {autoRotate ? <Pause size={13} /> : <Play size={13} />}
-          <span>หมุนอัตโนมัติ</span>
+          <span className="brain-rotate-label">หมุนอัตโนมัติ</span>
         </button>
       </motion.div>
 
@@ -313,6 +314,7 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
           boxShadow: 'var(--shadow-md)',
           maxWidth: 244,
         }}
+        className="brain-legend"
       >
         <p style={{
           fontSize: 10, fontWeight: 700, color: 'var(--accent)',
@@ -399,7 +401,17 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
         )}
       </AnimatePresence>
 
-      <style>{`@keyframes braindrop-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }`}</style>
+      <style>{`
+        @keyframes braindrop-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+        @media (max-width: 600px) {
+          .brain-header { top: 12px !important; left: 12px !important; right: 12px !important; gap: 8px !important; }
+          .brain-title { font-size: 18px !important; }
+          .brain-subtitle { display: none !important; }
+          .brain-rotate-label { display: none !important; }
+          .brain-legend { left: 12px !important; right: 12px !important; bottom: 12px !important; max-width: none !important; padding: 10px 12px 8px !important; }
+          .brain-legend .legend-row { padding: 4px 6px !important; }
+        }
+      `}</style>
 
       {/* ── 3D Canvas ── */}
       <div className="r3f-fill" style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
