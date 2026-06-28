@@ -53,13 +53,14 @@ function PublicSite() {
           onClick={goCover}
           aria-label="กลับหน้าแรก"
           style={{
-            position: 'fixed', top: 14, right: 14, zIndex: 45,
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '7px 13px', borderRadius: 999,
+            position: 'fixed', top: 16, right: 16, zIndex: 45,
+            display: 'flex', alignItems: 'center', gap: 7,
+            padding: '8px 15px', borderRadius: 'var(--radius-pill)',
             background: 'var(--surface)', border: '1px solid var(--border-strong)',
             boxShadow: 'var(--shadow-sm)', cursor: 'pointer',
             color: 'var(--text-muted)', fontFamily: 'var(--font)',
             fontSize: 13, fontWeight: 500,
+            backdropFilter: 'blur(6px)',
           }}
         >
           <HomeIcon size={15} /> หน้าแรก

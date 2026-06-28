@@ -63,13 +63,17 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     const colors: number[] = []
     const geometry = new THREE.BufferGeometry()
 
+    // โทนจุดเข้ากับ Warm Aurora — light: walnut warm-brown, dark: sand cream
+    // (ไม่ใช้ดำดิบหรือเทาเย็น เพื่อไม่ให้ตัดธีมแสงธรรมชาติ)
+    const r = theme === 'dark' ? 244 : 90
+    const g = theme === 'dark' ? 231 : 53
+    const b = theme === 'dark' ? 212 : 31
     for (let ix = 0; ix < AMOUNTX; ix++) {
       for (let iy = 0; iy < AMOUNTY; iy++) {
         const x = ix * SEPARATION - (AMOUNTX * SEPARATION) / 2
         const z = iy * SEPARATION - (AMOUNTY * SEPARATION) / 2
         positions.push(x, 0, z)
-        if (theme === 'dark') colors.push(200, 200, 200)
-        else colors.push(0, 0, 0)
+        colors.push(r, g, b)
       }
     }
 

@@ -4,61 +4,95 @@
 .r3f-fill > div > canvas,
 .r3f-fill canvas { width: 100% !important; height: 100% !important; display: block; }
 
-/* ทำให้ Tailwind `dark:` ผูกกับ [data-theme="dark"] ของแอป (แทน prefers-color-scheme เริ่มต้น)
-   เพื่อให้คอมโพเนนต์ที่ใช้ dark: เช่น card-fan-carousel ตามปุ่มสลับธีมของเรา */
+/* ผูก Tailwind `dark:` กับ [data-theme="dark"] */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Warm Aurora — natural-light, sบายตา, รูปทรงโค้งมน ไม่เหลี่ยม
+   palette เน้นโทนแสงธรรมชาติ (cream / terracotta / sage / dusty lilac)
+   ไม่ใช้ม่วง-น้ำเงิน "AI slop" gradient
+   ──────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* ── Logo-matched palette: Blue #3B82F6 → Indigo #4F46E5 ── */
-  --bg: #F8F7FF;
-  --surface: #FFFFFF;
-  --surface-hover: #F0EFFE;
-  --accent: #4F46E5;
-  --accent-2: #3B82F6;
-  --accent-light: #EEF2FF;
-  --accent-mid: #818CF8;
-  --accent-dark: #1E1B4B;
-  --text: #1E1B4B;
-  --text-muted: #6B7280;
-  --text-subtle: #9CA3AF;
-  --border: rgba(79, 70, 229, 0.08);
-  --border-strong: rgba(79, 70, 229, 0.14);
-  --radius: 12px;
-  --sidebar-w: 240px;
-  --shadow-sm: 0 1px 3px rgba(79,70,229,0.06), 0 1px 2px rgba(79,70,229,0.04);
-  --shadow-md: 0 4px 16px rgba(79,70,229,0.10), 0 2px 4px rgba(79,70,229,0.05);
+  --bg:            #FAF5EC;  /* warm cream — แสงแดดเช้า */
+  --bg-elevated:   #FDF8EE;
+  --surface:       #FFFAF0;  /* ivory */
+  --surface-hover: #F4ECDC;
+  --surface-soft:  #FBEEDC;  /* peach mist สำหรับ chip/eyebrow */
 
-  /* Typography */
-  --font: 'IBM Plex Sans Thai', system-ui, -apple-system, sans-serif;
-  --text-xs:   11px;
-  --text-sm:   12.5px;
-  --text-base: 14.5px;
+  --accent:        #C9824F;  /* terracotta — primary, warm but calm */
+  --accent-hover:  #B86A3C;
+  --accent-2:      #7BAFA3;  /* sage — secondary support */
+  --accent-3:      #B49AD1;  /* dusty lilac — tertiary */
+  --accent-light:  #FBEEDC;  /* peach mist (สำหรับ active nav bg) */
+  --accent-mid:    #E0A867;  /* amber */
+  --accent-dark:   #5A3522;  /* walnut */
+
+  --text:          #2B1F18;  /* warm near-black — ไม่ใช้ #000 ดิบ */
+  --text-muted:    #6E5B4F;
+  --text-subtle:   #A89685;
+
+  --border:        rgba(90, 53, 34, 0.08);
+  --border-strong: rgba(90, 53, 34, 0.16);
+
+  --shadow-sm: 0 1px 2px rgba(90,53,34,0.05), 0 2px 6px rgba(90,53,34,0.04);
+  --shadow-md: 0 6px 22px rgba(90,53,34,0.10), 0 2px 6px rgba(90,53,34,0.05);
+  --shadow-glow: 0 10px 36px rgba(201, 130, 79, 0.22);
+
+  /* รัศมีโค้งมน — ไม่เหลี่ยม (ทุกอันยก ≥12px, ปุ่ม pill) */
+  --radius-sm:   10px;
+  --radius:      16px;
+  --radius-lg:   22px;
+  --radius-xl:   28px;
+  --radius-pill: 999px;
+
+  --sidebar-w: 244px;
+
+  /* Typography — IBM Plex Sans Thai (body, รองรับ ไทย-EN), Manrope (display) */
+  --font:         'IBM Plex Sans Thai', 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-display: 'Manrope', 'IBM Plex Sans Thai', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --text-xs:   11.5px;
+  --text-sm:   13px;
+  --text-base: 14.75px;
   --text-lg:   16px;
   --text-xl:   20px;
-  --text-2xl:  24px;
+  --text-2xl:  26px;
+  --text-3xl:  34px;
   --fw-light:    300;
   --fw-regular:  400;
   --fw-medium:   500;
   --fw-semibold: 600;
   --fw-bold:     700;
+  --fw-extra:    800;
 }
 
 [data-theme="dark"] {
-  --bg: #0D0B1A;
-  --surface: #18163A;
-  --surface-hover: #211E4A;
-  --accent: #818CF8;
-  --accent-2: #60A5FA;
-  --accent-light: #1E1B4B;
-  --accent-mid: #4F46E5;
-  --accent-dark: #C7D2FE;
-  --text: #EEF2FF;
-  --text-muted: #A5B4FC;
-  --text-subtle: #6366F1;
-  --border: rgba(129, 140, 248, 0.10);
-  --border-strong: rgba(129, 140, 248, 0.18);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.25);
+  /* warm midnight — ไม่ใช้ดำดิบ #000, ลด glare บนตา */
+  --bg:            #181410;
+  --bg-elevated:   #1F1A14;
+  --surface:       #221C16;
+  --surface-hover: #2D261E;
+  --surface-soft:  #2B221A;
+
+  --accent:        #E5A87A;  /* soft amber — สบายตาในมืด */
+  --accent-hover:  #F0BD93;
+  --accent-2:      #9BC3B7;  /* muted sage */
+  --accent-3:      #C8B5DF;  /* soft lilac */
+  --accent-light:  #3A2B20;
+  --accent-mid:    #C9824F;
+  --accent-dark:   #F4D9B8;
+
+  --text:          #F4E7D4;  /* warm ivory — เนื้อหาอ่านสบาย ไม่จ้า */
+  --text-muted:    #B5A290;
+  --text-subtle:   #7A6A5C;
+
+  --border:        rgba(229, 168, 122, 0.10);
+  --border-strong: rgba(229, 168, 122, 0.22);
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.30);
+  --shadow-md: 0 8px 28px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.35);
+  --shadow-glow: 0 12px 40px rgba(229, 168, 122, 0.18);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -71,17 +105,19 @@ body {
   font-size: var(--text-base);
   font-weight: var(--fw-regular);
   line-height: 1.65;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.005em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background 0.25s, color 0.25s;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-h1 { font-size: var(--text-2xl); font-weight: var(--fw-bold); letter-spacing: -0.5px; line-height: 1.25; color: var(--text); }
-h2 { font-size: var(--text-xl); font-weight: var(--fw-semibold); letter-spacing: -0.3px; line-height: 1.3; color: var(--text); }
-h3 { font-size: var(--text-base); font-weight: var(--fw-semibold); letter-spacing: 0; line-height: 1.4; color: var(--text); }
-p { color: var(--text); line-height: 1.7; }
-a { color: inherit; text-decoration: none; }
+/* Headings ใช้ Manrope (display) ตัวหนา-โค้ง ดูทันสมัย ไม่เหลี่ยม */
+h1, h2, h3 { font-family: var(--font-display); color: var(--text); }
+h1 { font-size: var(--text-3xl); font-weight: var(--fw-extra);   letter-spacing: -0.018em; line-height: 1.15; }
+h2 { font-size: var(--text-2xl); font-weight: var(--fw-bold);    letter-spacing: -0.012em; line-height: 1.25; }
+h3 { font-size: var(--text-lg);  font-weight: var(--fw-semibold); letter-spacing: -0.005em; line-height: 1.35; }
+p  { color: var(--text); line-height: 1.7; }
+a  { color: inherit; text-decoration: none; }
 button { font-family: var(--font); }
 
 input[type="text"],
@@ -94,23 +130,74 @@ input[type="search"] {
   color: var(--text);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  padding: 10px 16px;
+  padding: 11px 18px;
   width: 100%;
   box-shadow: var(--shadow-sm);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14);
+  box-shadow: 0 0 0 4px rgba(201, 130, 79, 0.16);
 }
 input::placeholder { color: var(--text-subtle); font-weight: var(--fw-light); }
 
 [data-theme="dark"] body { line-height: 1.7; }
-[data-theme="dark"] p   { line-height: 1.75; }
+[data-theme="dark"] p    { line-height: 1.75; }
 
-::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent-mid); }
+
+/* ─── Reusable atmosphere utilities ──────────────────────────────────────── */
+
+/* Warm Aurora background — 3 radial gradients ทับบน base cream
+   ใช้ใต้หน้า cover / hero / fullscreen views */
+.aurora-bg {
+  background:
+    radial-gradient(ellipse 60% 50% at 18% 12%, color-mix(in oklab, var(--accent) 28%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 45% at 82% 18%, color-mix(in oklab, var(--accent-2) 24%, transparent) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 55% at 50% 95%, color-mix(in oklab, var(--accent-3) 22%, transparent) 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg) 100%);
+}
+
+/* Subtle warm grain ลบความเรียบของ gradient ให้มีเนื้อสัมผัส */
+.aurora-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.21 0 0 0 0 0.13 0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.06;
+  mix-blend-mode: multiply;
+}
+[data-theme="dark"] .aurora-grain::after { opacity: 0.10; mix-blend-mode: screen; }
+
+/* Glass card — ใช้กับ overlay / modal */
+.glass-card {
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  backdrop-filter: blur(14px) saturate(1.05);
+  -webkit-backdrop-filter: blur(14px) saturate(1.05);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* Pulsing dot — สำหรับ hint chip */
+@keyframes braindrop-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(1.25); }
+}
+
+/* Accessibility — keyboard focus visible เด่นชัด */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
