@@ -567,13 +567,13 @@ export default function BrainViewer({ onBack }: BrainViewerProps) {
             ))}
 
             <OrbitControls
-              enablePan enableZoom enableRotate
+              enablePan={false}
+              enableZoom enableRotate
               enableDamping
               dampingFactor={0.08}
               zoomSpeed={0.6}
               rotateSpeed={0.85}
-              panSpeed={0.7}
-              zoomToCursor
+              target={[0, 0, 0]}
               minDistance={2.5} maxDistance={12}
               autoRotate={autoRotate}
               autoRotateSpeed={0.8}
