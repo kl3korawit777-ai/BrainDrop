@@ -9,8 +9,6 @@ import CoverPage from './components/CoverPage'
 import { useStore } from './store/useStore'
 
 const Admin = lazy(() => import('./pages/Admin'))
-// BrainViewer ดึง three.js + drei (~700KB) → lazy-load ออกจาก main bundle
-const BrainViewer = lazy(() => import('./components/BrainViewer'))
 
 export default function App() {
   const loadContent = useStore(s => s.loadContent)
@@ -48,8 +46,8 @@ function PublicSite() {
         {!entered && <CoverPage key="cover" onEnter={() => setEntered(true)} />}
       </AnimatePresence>
 
-      {/* ไอคอนลอย: กลับหน้าปก — เล็กเพื่อไม่บัง search/filter / brain viewer มี back ในตัว */}
-      {entered && view !== 'brain' && !openItemId && (
+      {/* ไอคอนลอย: กลับหน้าปก — เล็กเพื่อไม่บัง search/filter */}
+      {entered && !openItemId && (
         <button
           onClick={goCover}
           aria-label="กลับหน้าปก"
@@ -79,15 +77,6 @@ function PublicSite() {
           {(() => {
             const openItem = openItemId ? content.find(c => c.id === openItemId) : null
             if (openItem) return <SlidesViewer item={openItem} onBack={() => setOpenItemId(null)} />
-            if (view === 'brain') return (
-              <Suspense fallback={
-                <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
-                  กำลังเปิดสมอง 3 มิติ…
-                </div>
-              }>
-                <BrainViewer onBack={() => setView('home')} />
-              </Suspense>
-            )
             if (view === 'subjects') return <AllSubjects onOpenItem={setOpenItemId} />
             return (
               <AnimatePresence mode="wait">

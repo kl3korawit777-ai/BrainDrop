@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { LayoutGrid, BookOpen, Moon, Sun, X, ChevronsLeft, ChevronsRight, Brain } from 'lucide-react'
+import { LayoutGrid, BookOpen, Moon, Sun, X, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import Logo from './Logo'
 import InboxButton from './InboxButton'
@@ -13,7 +13,6 @@ interface Props {
 const navItems = [
   { id: 'home',     label: 'หน้าหลัก',    Icon: LayoutGrid },
   { id: 'subjects', label: 'วิชาทั้งหมด', Icon: BookOpen },
-  { id: 'brain',    label: 'สมอง 3 มิติ', Icon: Brain },
 ]
 
 export default function Sidebar({ currentView, onNavigate }: Props) {
