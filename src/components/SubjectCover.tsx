@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Presentation, FileText, Atom, Calculator,
   Book, FlaskConical, Globe, Music, Code,
@@ -34,12 +35,20 @@ export default function SubjectCover({ subject, count, coverUrl }: Props) {
   const meta = SUBJECT_CONFIG[subject] ?? DEFAULT_META
   const Icon = ICON_MAP[meta.iconType] ?? Presentation
   const [from, to] = meta.gradient
+  const [coverFailed, setCoverFailed] = useState(false)
 
   // มีรูปปก → แสดงรูปเต็มการ์ด + overlay ให้ตัวอักษรอ่านออก
-  if (coverUrl) {
+  if (coverUrl && !coverFailed) {
     return (
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-        <img src={coverUrl} alt={subject} loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+        <img
+          src={coverUrl}
+          alt={subject}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setCoverFailed(true)}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        />
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.05) 100%)',

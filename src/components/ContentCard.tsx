@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Presentation, FileText, Atom, Calculator,
@@ -35,6 +36,7 @@ interface Props {
 export default function ContentCard({ item, index, onClick }: Props) {
   const readProgress = useStore(s => s.readProgress[item.id] ?? 0)
   const pct = item.slideCount > 0 ? Math.round((readProgress / item.slideCount) * 100) : 0
+  const [coverFailed, setCoverFailed] = useState(false)
 
   const meta = SUBJECT_CONFIG[item.subject] ?? DEFAULT_META
   const Icon = ICON_MAP[meta.iconType] ?? Presentation
@@ -76,8 +78,15 @@ export default function ContentCard({ item, index, onClick }: Props) {
       }}>
         {(() => {
           const cover = coverFor(item)
-          return cover ? (
-            <img src={cover} alt={item.title} loading="lazy" referrerPolicy="no-referrer" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          return cover && !coverFailed ? (
+            <img
+              src={cover}
+              alt={item.title}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={() => setCoverFailed(true)}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            />
           ) : (
             <Icon size={34} color={meta.iconColor} strokeWidth={1.5} />
           )

@@ -260,6 +260,7 @@ export default function AllSubjects({ onOpenItem }: Props) {
 
 function PhotoCard({ item, index, onClick }: { item: ContentItem; index: number; onClick: () => void }) {
   const cover = coverFor(item)
+  const [coverFailed, setCoverFailed] = useState(false)
   return (
     <motion.article
       initial={{ opacity: 0, y: 12 }}
@@ -276,10 +277,28 @@ function PhotoCard({ item, index, onClick }: { item: ContentItem; index: number;
       onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)'}
       onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-sm)'}
     >
-      <div style={{ aspectRatio: '16/10', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, var(--accent-light), var(--surface-hover))' }}>
-        {cover && (
-          <img src={cover} alt={item.title} loading="lazy" referrerPolicy="no-referrer"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      <div style={{ aspectRatio: '4/3', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, var(--accent-light), var(--surface-hover))' }}>
+        {cover && !coverFailed && (
+          <>
+            <img aria-hidden src={cover} loading="lazy" referrerPolicy="no-referrer"
+              style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                objectFit: 'cover', filter: 'blur(32px) saturate(1.4) brightness(0.95)',
+                transform: 'scale(1.3)',
+              }} />
+            <div aria-hidden style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(160deg, rgba(59,130,246,0.10) 0%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.08) 100%)',
+            }} />
+            <img src={cover} alt={item.title} loading="lazy" referrerPolicy="no-referrer"
+              onError={() => setCoverFailed(true)}
+              style={{
+                position: 'absolute', inset: 0,
+                width: '100%', height: '100%',
+                objectFit: 'contain', display: 'block',
+                filter: 'drop-shadow(0 4px 14px rgba(0,0,0,0.18))',
+              }} />
+          </>
         )}
       </div>
       <div style={{ padding: '0.875rem 1rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
